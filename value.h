@@ -38,21 +38,9 @@ static inline Value asPointer(void* v) {
     return x;
 }
 
-static inline Value asChannel(Channel* v) {
-    Value x;
-    x.asChannel = v;
-    return x;
-}
-
 static inline Value asString(char* v) {
     Value x;
     x.asString = v;
-    return x;
-}
-
-static inline Value asFunc(Func v) {
-    Value x;
-    x.asFunc = v;
     return x;
 }
 

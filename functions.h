@@ -10,14 +10,14 @@
 #include <pthread.h>
 
 typedef struct ValueQueueMem {
-    Value* val;
+    Value val;
     struct ValueQueueMem* next;
 } ValueQueueMem;
 typedef struct ValueQueue {
     struct ValueQueueMem* head;
     struct ValueQueueMem* tail;
 } ValueQueue;
-void addValueQ(ValueQueue* q, Value* v) {
+void addValueQ(ValueQueue* q, Value v) {
     ValueQueueMem* r = calloc(1, sizeof(ValueQueueMem));
     r->val = v;
     r->next = 0;
@@ -33,7 +33,7 @@ void addValueQ(ValueQueue* q, Value* v) {
 bool isEmptyQ(ValueQueue* q){
     return q->head == 0;
 }
-Value* removeValueQ(ValueQueue* q) {
+Value removeValueQ(ValueQueue* q) {
     ValueQueueMem* r = q->head;
     if (r != 0) {
         q->head = r->next;
@@ -89,7 +89,7 @@ void waitFor(Function* before, Function* after, int pipeToIndex){
     notifier->next=before->notify;
     before->notify=notifier;
 }
-void notify(Notifier* notifier, Value* val){
+void notify(Notifier* notifier, Value val){
     if(notifier->index >= 0){ //A negative index signals that we don't pipe output at all.
         addValueQ(notifier->listener->values[notifier->index], val);
     }
@@ -108,7 +108,7 @@ void notify(Notifier* notifier, Value* val){
 }
 void executeFunction(Function* function){
     //First, assemble the arguments from each arg queue.
-    Value* args[function->numArgs];
+    Value args[function->numArgs];
     for(int i = 0; i<function->numArgs; i++){
         args[i] = removeValueQ((function->values)[i]);
     }
@@ -122,7 +122,7 @@ void executeFunction(Function* function){
         printf("Fatal error waiting on function!");
         exit(0);
     }
-    Value* ret = (Value*) threadResult;
+    Value ret = (Value) threadResult;
     //Now, it needs to notify all the things that are dependent on it.
     Notifier* notifier = function->notify;
     while(notifier != 0){
