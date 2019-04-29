@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "CInterpreter.h"
 
 /* Parameter for a function,
  * includes the type, name, and
@@ -17,7 +18,7 @@ typedef struct params
     char* name;
     char** funcs;
     bool isAtomic;
-} param;
+} params;
 
 /* Stores information about a
  * given function, including
@@ -28,7 +29,7 @@ typedef struct functionInfo
 {
     char* modifiers;
     char* name;
-    param* parameters;
+    params* parameters;
 } functionInfo;
 
 /* Reads through a chain file
