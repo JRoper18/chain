@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 /* Parameter for a function,
  * includes the type, name, and
@@ -14,7 +15,7 @@ typedef struct params
 {
     char* type;
     char* name;
-    char** funcs [];
+    char** funcs;
     bool isAtomic;
 } param;
 
@@ -35,7 +36,16 @@ typedef struct functionInfo
  * required to convert chain
  * code to c.
  */
-functionInfo* interpret (char* fileName)
+
+char* findLastWord (char* s)
+{
+    int len = strlen (s);
+    char* i;
+    for (i = s + len - 1; i >= s && *s != ' ' && *s != '\n' && *s != '\t'; i--);
+    return i;
+}
+
+functionInfo** interpret (char* fileName)
 {
     FILE* file = fopen (fileName, "r");
 
@@ -48,7 +58,7 @@ functionInfo* interpret (char* fileName)
     char n = '\0';
     char* word = (char*)malloc (2000 * sizeof (char));
     int letterNum = 0;
-    functionInfo* info = (functionInfo*)malloc (100 * sizeof (functionInfo));
+    functionInfo** info = (functionInfo**)malloc (100 * sizeof (functionInfo*));
     int infoNum = 0;
 
     int state = 0;
@@ -120,17 +130,17 @@ functionInfo* interpret (char* fileName)
                 else if (n != '=')
                 {
                     info [infoNum] = (functionInfo*)malloc (sizeof (functionInfo));
-                    info [infoNum].modifiers = (char*)malloc (2000 * sizeof (char));
-                    char* idx = findLastWord (infoNum);
+                    info [infoNum]->modifiers = (char*)malloc (2000 * sizeof (char));
+                    char* idx = findLastWord (word);
                     if (*idx == '*')
                     {
                         *(idx - 1) = '*';
-                        *idx = '\0'
+                        *idx = '\0';
                         idx++;
                     }
-                    info [infoNum].name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
-                    strcpy (info [infoNum].name, idx);
-                    strcpy (info [infoNum].modifiers, word);
+                    info [infoNum]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
+                    strcpy (info [infoNum]->name, idx);
+                    strcpy (info [infoNum]->modifiers, word);
                     letterNum = 0;
                     word [letterNum] = '\0';
                     state = 1;
