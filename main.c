@@ -1,5 +1,5 @@
 #include "functions.h"
-#include "CInterpreter.c"
+#include "CInterpreter.h"
 int main() {
 
 }
