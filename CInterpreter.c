@@ -5,32 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include "CInterpreter.h"
 
 /* Parameter for a function,
  * includes the type, name, and
  * functions which feed it.
  */
-typedef struct params
-{
-    char* type;
-    char* name;
-    char** funcs;
-    bool isAtomic;
-} params;
 
 /* Stores information about a
  * given function, including
  * type, name, and a list of
  * parameters.
  */
-typedef struct functionInfo
-{
-    char* modifiers;
-    char* name;
-    params* parameters;
-} functionInfo;
 
 /* Reads through a chain file
  * to find the information
@@ -117,7 +103,7 @@ functionInfo** interpret (char* fileName)
             // findName - finds the return type of the function.
             if (state == 0)
             {
-                if (n != '(')
+                if (n != '(' && n != ';')
                 {
                     word [letterNum] = n;
                     letterNum++;
