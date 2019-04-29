@@ -2,6 +2,7 @@
 // Created by jack on 4/27/2019.
 //
 #include <unistd.h>
+#include <pthread.h>
 #include "atomic.h"
 void dumbIncrement(Atomic* atomic){
     int atomicInt = getAtomic(atomic).asInt;

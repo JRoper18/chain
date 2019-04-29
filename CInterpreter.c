@@ -128,7 +128,6 @@ functionInfo** interpret (char* fileName)
                     word [letterNum] = 0;
                 }
                 else if (n != '=')
-                {
                     info [infoNum] = (functionInfo*)malloc (sizeof (functionInfo));
                     info [infoNum]->modifiers = (char*)malloc (2000 * sizeof (char));
                     char* idx = findLastWord (word);
