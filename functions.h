@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "value.h"
-#include "pool.h"
 
 typedef struct ValueQueueMem ValueQueueMem;
 typedef struct ValueQueue ValueQueue;

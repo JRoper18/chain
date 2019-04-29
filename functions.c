@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "value.h"
 #include "functions.h"
 typedef struct ValueQueueMem {
@@ -126,3 +127,12 @@ void executeFunction(Function* function){
 }
 
 
+/*
+ * Thread Pooling mechanisms
+ */
+pthread_t* availibleThreads;
+size_t numThreads;
+const int MAX_THREADS = 30;
+void runAndReturn(void* func, Value* args){
+
+}

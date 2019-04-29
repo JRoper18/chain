@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 /* Parameter for a function,
  * includes the type, name, and
@@ -14,7 +15,7 @@ typedef struct params
 {
     char* type;
     char* name;
-    char** funcs [];
+    char** funcs;
     bool isAtomic;
 } param;
 
@@ -119,7 +120,7 @@ functionInfo* interpret (char* fileName)
                 }
                 else if (n != '=')
                 {
-                    info [infoNum] = (functionInfo*)malloc (sizeof (functionInfo));
+                    info [infoNum] = (functionInfo* ) malloc (sizeof (functionInfo));
                     info [infoNum].modifiers = (char*)malloc (2000 * sizeof (char));
                     char* idx = findLastWord (infoNum);
                     if (*idx == '*')
