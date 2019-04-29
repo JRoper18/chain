@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "CInterpreter.c"
+#include "CInterpreter.h"
 int main (int argc, char** argv)
 {
     if (argc > 1)
