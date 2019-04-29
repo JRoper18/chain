@@ -1,5 +1,5 @@
-#ifndef _GO_H_
-#define _GO_H_
+#ifndef _VALUE_H_
+#define _VALUE_H_
 
 #include <stdint.h>
 #include <stdbool.h>
