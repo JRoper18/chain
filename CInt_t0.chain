@@ -1,0 +1,8 @@
+int i = 0;
+int b = 0;
+
+const // blah
+unsigned int /*blah*/ main ()
+{
+    blah;
+}
