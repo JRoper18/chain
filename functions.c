@@ -5,7 +5,7 @@
 #include "value.h"
 #include "functions.h"
 
-#define MAX_THREADS = 30;
+#define MAX_THREADS 30
 
 typedef struct ValueQueueMem {
     Value val;
@@ -41,6 +41,67 @@ Value removeValueQ(ValueQueue* q) {
     }
     return r->val;
 }
+/*
+ * Thread Pooling mechanisms
+*/
+static bool halt = 0;
+static ValueQueue* taskQueue = 0;
+static ValueQueue* argQueue = 0;
+static ValueQueue* resultLocationQueue = 0;
+static ValueQueue* readyLocationQueue = 0;
+static pthread_mutex_t* taskQueueLock = 0;
+static pthread_t availibleThreads[MAX_THREADS];
+static size_t numThreads;
+static void runOnPool(void* func, Value* args, Value* location, bool* ready){
+	//Add the function to the queue of functions to run.
+	pthread_mutex_lock(taskQueueLock);
+	addValueQ(taskQueue, asPointer(func));
+	addValueQ(argQueue, asPointer(args));
+	addValueQ(resultLocationQueue, asPointer(location));
+	addValueQ(readyLocationQueue, asPointer(ready));
+	pthread_mutex_unlock(taskQueueLock);
+}
+static void pooledThread(){
+	while(!halt){
+		pthread_mutex_lock(taskQueueLock);
+		if(isEmptyQ(taskQueue)){
+			//Wait a sec, there's nothing to run.
+			pthread_mutex_unlock(taskQueueLock);
+			sleep(1);
+			continue;
+		}
+		Value funcValue = removeValueQ(taskQueue);
+		Value argValue = removeValueQ(argQueue);
+		Value* returnLocation = (Value*) removeValueQ(resultLocationQueue).asPointer;
+		bool* readyLocation = removeValueQ(readyLocationQueue).asPointer;
+		pthread_mutex_unlock(taskQueueLock);
+		Value (*nextFunc)(Value*) = funcValue.asPointer;
+		Value* args = (Value*) argValue.asPointer;
+		//Run the function and get the value.
+		Value result = nextFunc(args);
+		//Put the return value in the corresponding result location.
+		*returnLocation = result;
+		//Also, put the ready bit in the ready location.
+		*readyLocation = 1;
+	}
+	pthread_exit(NULL);
+}
+void initPool(){
+	taskQueue = calloc(1, sizeof(ValueQueue));
+	argQueue = calloc(1, sizeof(ValueQueue));
+	resultLocationQueue = calloc(1, sizeof(ValueQueue));
+	readyLocationQueue = calloc(1, sizeof(ValueQueue));
+	taskQueueLock = malloc(sizeof(pthread_mutex_t));
+	if (pthread_mutex_init(taskQueueLock, NULL) != 0){
+		printf("\n mutex init failed\n");
+		exit(0);
+	}
+	//Start out with a number of threads equal to the number of cores in our CPU.
+	numThreads = sysconf(_SC_NPROCESSORS_ONLN);
+	for(int i = 0; i<numThreads; i++){
+		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, NULL);
+	}
+}
 
 struct Function;
 typedef struct Function {
@@ -55,8 +116,6 @@ typedef struct Notifier {
     int index; //The notifier function pipes it's output to the index'th arg of the listener function.
     struct Notifier* next; //For linked list capabilities.
 } Notifier;
-
-void executeFunction(Function* function);
 
 Function* makeFunction(size_t size, void* func){
     Function* new = calloc(1, sizeof(Function));
@@ -104,6 +163,7 @@ void notify(Notifier* notifier, Value val){
         executeFunction(notifier->listener);
     }
 }
+
 void executeFunction(Function* function){
     //First, assemble the arguments from each arg queue.
     Value args[function->numArgs];
@@ -111,62 +171,20 @@ void executeFunction(Function* function){
         args[i] = removeValueQ((function->values)[i]);
     }
     pthread_t thread;
-    void* threadResult;
+	volatile Value result = asInt(0);
+    volatile bool ready = 0;
     //Run the program in a thread.
-    pthread_create(&thread, NULL, function->exec, args);
+	runOnPool(function->exec, args, &result, &ready);
     //Wait until it finishes:
-    int joinSuccess = pthread_join(thread, &threadResult);
-    if(joinSuccess != 0){
-        printf("Fatal error waiting on function!");
-        exit(0);
-    }
-    Value ret = (Value) threadResult;
+    while(!ready){}
     //Now, it needs to notify all the things that are dependent on it.
     Notifier* notifier = function->notify;
     while(notifier != 0){
         //Tell the next function that we're done, here's our value, do whatever you want with it
-        notify(notifier, ret);
+        notify(notifier, result);
         notifier = notifier->next;
     }
 }
 
 
-/*
- * Thread Pooling mechanisms
-*/
-static ValueQueue* taskQueue = 0;
-static ValueQueue* argQueue = 0;
-static pthread_mutex_t* taskQueueLock;
-static pthread_t* availibleThreads[MAX_THREADS];
-static size_t numThreads;
-static pthread_t* runOnPool(void* func, Value* args){
-    //Add the function to the queue of functions to run.
-    pthread_mutex_lock(taskQueueLock);
-    addValueQ(taskQueue, asPointer(func));
-    pthread_mutex_unlock(taskQueueLock);
-    //Alright, now when the function begins to run, return the thread.
 
-}
-void pooledThread(){
-    pthread_mutex_lock(taskQueueLock);
-    Value funcValue = removeValueQ(taskQueue);
-    Value argValue = removeValueQ(argQueue);
-    pthread_mutex_unlock(taskQueueLock);
-    void* nextFunc = funcValue.asPointer;
-    Value* args = (Value*) argValue.asPointer;
-    Value ret = (Value (*) (Value*)(nextFunc))(args);
-}
-void initPool(){
-    taskQueue = calloc(1, sizeof(ValueQueue));
-    argQueue = calloc(1, sizeof(ValueQueue));
-    if (pthread_mutex_init(taskQueueLock, NULL) != 0){
-        printf("\n mutex init failed\n");
-        exit(0);
-    }
-    //Start out with a number of threads equal to the number of cores in our CPU.
-    numThreads = sysconf(_SC_NPROCESSORS_ONLN);
-    for(int i = 0; i<numThreads; i++){
-        pthread_create(availibleThreads[i], NULL, NULL, NULL);
-        pthread_create
-    }
-}

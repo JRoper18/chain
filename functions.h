@@ -25,5 +25,5 @@ extern Notifier* makeNotifier(Function* notifier, Function* listener, size_t ind
 extern void waitFor(Function* before, Function* after, int pipeToIndex);
 extern void notify(Notifier* notifier, Value val);
 extern void executeFunction(Function* function);
-
+extern void initPool();
 #endif //COMPILER_FUNCTIONS_H
