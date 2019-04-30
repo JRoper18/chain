@@ -1,15 +1,9 @@
 #include <stdio.h>
 #include "CInterpreter.h"
+#include <string.h>
 int main (int argc, char** argv)
 {
-    if (argc > 1)
-    {
-        functionInfo** infos = interpret (argv [1]);
+        functionInfo** infos = interpret ("../CInt_t0.chain");
         printf ("modifiers: %s\n", infos[0]->modifiers);
         printf ("name: %s\n", infos [0]->name);
-    }
-    else
-    {
-        printf ("Not enough args.");
-    }
 }

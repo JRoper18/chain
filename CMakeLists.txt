@@ -8,4 +8,4 @@ add_executable(compiler CInterpreter.c go.c go.h main.c value.h functions.h atom
 add_executable(t0 t0.c value.h functions.c functions.h)
 add_executable(t1 t1.c value.h functions.c functions.h)
 add_executable(t2 t2.c value.h functions.c functions.h atomic.h)
-add_executable(CInt_t0 CInt_t0.c functions.h functions.c CInterpreter.c CInterpreter.h)
+add_executable(CInt_t0 CInt_t0.c CInterpreter.c CInterpreter.h)

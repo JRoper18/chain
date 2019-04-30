@@ -28,7 +28,7 @@ char* findLastWord (char* s)
 {
     int len = strlen (s);
     char* i;
-    for (i = s + len - 1; i >= s && *s != ' ' && *s != '\n' && *s != '\t'; i--);
+    for (i = s + len - 1; i >= s && *i != ' '; i--);
     return i;
 }
 
@@ -103,19 +103,36 @@ functionInfo** interpret (char* fileName)
             // findName - finds the return type of the function.
             if (state == 0)
             {
-                if (n != '(' && n != ';')
+                if (n != '(' && n != ';' && n != '=')
                 {
-                    word [letterNum] = n;
-                    letterNum++;
-                    word [letterNum] = '\0';
+                    if (n == ' ' || n == '\t' || n == '\n')
+                    {
+                        if (word [letterNum - 1] != ' ' && word [letterNum - 1] != '\t' && word [letterNum - 1] != '\n')
+                        {
+                            word [letterNum] = ' ';
+                            letterNum++;
+                            word [letterNum] = '\0';
+                        }
+                    }
+                    else
+                    {
+                        word [letterNum] = n;
+                        letterNum++;
+                        word [letterNum] = '\0';
+                    }
                 }
                 else if (n == ';')
                 {
                     letterNum = 0;
                     word [letterNum] = 0;
                 }
-                else if (n != '=')
+                else if (n == '(')
                 {
+                    if (word [letterNum - 1] == ' ')
+                    {
+                        letterNum--;
+                        word [letterNum] = '\0';
+                    }
                     info [infoNum] = (functionInfo*)malloc (sizeof (functionInfo));
                     info [infoNum]->modifiers = (char*)malloc (2000 * sizeof (char));
                     char* idx = findLastWord (word);
