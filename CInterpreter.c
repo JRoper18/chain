@@ -29,7 +29,7 @@ char* findLastWord (char* s)
     int len = strlen (s);
     char* i;
     for (i = s + len - 1; i >= s && *i != ' '; i--);
-    return i;
+    return i + 1;
 }
 
 functionInfo** interpret (char* fileName)
@@ -105,9 +105,9 @@ functionInfo** interpret (char* fileName)
             {
                 if (n != '(' && n != ';' && n != '=')
                 {
-                    if (n == ' ' || n == '\t' || n == '\n')
+                    if (n == ' ' || n == '\t' || n == '\n' || n == '\r')
                     {
-                        if (word [letterNum - 1] != ' ' && word [letterNum - 1] != '\t' && word [letterNum - 1] != '\n')
+                        if (letterNum > 0 && word [letterNum - 1] != ' ' && word [letterNum - 1] != '\t' && word [letterNum - 1] != '\n' && word [letterNum - 1] != '\r')
                         {
                             word [letterNum] = ' ';
                             letterNum++;
@@ -141,6 +141,10 @@ functionInfo** interpret (char* fileName)
                         *(idx - 1) = '*';
                         *idx = '\0';
                         idx++;
+                    }
+                    else if (*(idx - 1) == ' ')
+                    {
+                        *(idx - 1) = '\0';
                     }
                     info [infoNum]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
                     strcpy (info [infoNum]->name, idx);
