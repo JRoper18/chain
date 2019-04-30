@@ -21,6 +21,17 @@ typedef union Value {
     void* asPointer;
     char* asString;
 } Value;
+typedef struct ValueQueueMem {
+	Value val;
+	struct ValueQueueMem* next;
+} ValueQueueMem;
+typedef struct ValueQueue {
+	struct ValueQueueMem* head;
+	struct ValueQueueMem* tail;
+} ValueQueue;
+void addValueQ(ValueQueue* q, Value v);
+bool isEmptyQ(ValueQueue* q);
+Value removeValueQ(ValueQueue* q);
 
 /////////////
 // Helpers //
