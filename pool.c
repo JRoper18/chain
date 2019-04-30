@@ -28,6 +28,7 @@ static size_t numThreads;
 void runOnPool(void* func, Value* args, Value* location, bool* ready){
 	//Add the function to the queue of functions to run.
 	pthread_mutex_lock(taskQueueLock);
+	queueSize++;
 	addValueQ(taskQueue, asPointer(func));
 	addValueQ(argQueue, asPointer(args));
 	addValueQ(resultLocationQueue, asPointer(location));
@@ -43,6 +44,7 @@ static void pooledThread(){
 			sleep(0.1);
 			continue;
 		}
+		queueSize--;
 		Value funcValue = removeValueQ(taskQueue);
 		Value argValue = removeValueQ(argQueue);
 		Value* returnLocation = (Value*) removeValueQ(resultLocationQueue).asPointer;

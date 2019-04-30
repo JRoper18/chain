@@ -1,6 +1,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "functions.h"
+#include "pool.h"
 
 Value waitForANumber(){
     Value numPtr = asInt(1);
