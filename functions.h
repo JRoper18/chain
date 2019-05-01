@@ -21,9 +21,9 @@ typedef struct Notifier Notifier;
 extern void executeFunction(Function* function);
 
 extern Function* makeFunction(size_t size, void* func);
-extern Notifier* makeNotifier(Function* notifier, Function* listener, size_t index);
+extern Notifier* makeNotifier(Function* listener, size_t index);
 extern void waitFor(Function* before, Function* after, int pipeToIndex);
 extern void notify(Notifier* notifier, Value val);
 extern void executeFunction(Function* function);
-
+void setArg(Function* function, size_t argNum, Value in);
 #endif //COMPILER_FUNCTIONS_H

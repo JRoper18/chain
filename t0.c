@@ -13,6 +13,7 @@ void fum(){
 }
 
 int main() {
+	initPool();
     Function *feFunc = makeFunction(0, fe);
     Function *fiFunc = makeFunction(0, fi);
     Function *foFunc = makeFunction(0, fo);

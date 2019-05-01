@@ -7,10 +7,12 @@
 //
 // Created by jack on 4/26/2019.
 //
+#include <pthread.h>
 #include "functions.h"
+#include "value.h"
 
 typedef struct Atomic {
-    volatile Value val;
+    Value val;
     pthread_mutex_t lock;
 } Atomic;
 
@@ -26,6 +28,11 @@ Value deltaAtomic(Atomic* atomic, Value func(Value)){
     atomic->val = newVal;
     pthread_mutex_unlock(&(atomic->lock));
     return newVal;
+}
+void incrementAtomic(Atomic* atomic, int amount){
+	pthread_mutex_lock(&(atomic->lock));
+	atomic->val = asInt(atomic->val.asInt + amount);
+	pthread_mutex_unlock(&(atomic->lock));
 }
 void setAtomic(Atomic* atomic, Value val){
     pthread_mutex_lock(&(atomic->lock));
