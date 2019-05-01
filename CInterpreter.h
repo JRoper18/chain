@@ -5,17 +5,18 @@
 
 typedef struct params
 {
-    char* type;
+    char* modifiers;
     char* name;
-    char** funcs;
-    bool isAtomic;
-} params;
+    char** functions;
+    int numFuncs;
+} param;
 
 typedef struct functionInfo
 {
     char* modifiers;
     char* name;
-    params* parameters;
+    param** parameters;
+    int numParams;
 } functionInfo;
 
 extern char* findLastWord (char*);
