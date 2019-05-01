@@ -6,7 +6,9 @@
 #define COMPILER_POOL_H
 
 #include "value.h"
+#include "functions.h"
 
-void runOnPool(void* func, Value* args, Value* location, bool* ready);
+void runOnPool(Function* func, Value* args);
 void initPool();
+void sync();
 #endif //COMPILER_POOL_H

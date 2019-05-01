@@ -6,6 +6,7 @@
 #define COMPILER_ITERATORS_H
 
 #include "value.h"
+#include "functions.h"
 
-void foreach_int(void* func, int arr[], size_t size);
+void foreach_int(Function* func, int arr[], size_t size);
 #endif //COMPILER_ITERATORS_H
