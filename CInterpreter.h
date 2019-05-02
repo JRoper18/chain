@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+const static int STACK_SIZE = 100;
+
 typedef struct params
 {
     char* modifiers;
@@ -19,7 +21,16 @@ typedef struct functionInfo
     int numParams;
 } functionInfo;
 
-extern char* findLastWord (char*);
+typedef struct stack
+{
+    int height;
+    char* vals;
+} stack;
+
 extern functionInfo** interpret (char*);
+extern stack* newStack ();
+extern void push (stack*, char);
+extern char pop (stack*);
+extern char* infoToString (functionInfo*);
 
 #endif
