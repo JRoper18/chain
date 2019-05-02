@@ -1,4 +1,6 @@
 #include "functions.h"
+#include "pool.h"
+
 void fe(){
     printf("fe");
 }
@@ -22,6 +24,7 @@ int main() {
     waitFor(fiFunc, foFunc, -1);
     waitFor(foFunc, fumFunc, -1);
     executeFunction(feFunc);
-    printf("\nDesired output: fefifofum");
+    printf("\nDesired output: fefifofum\n");
+    sync();
     return 0;
 }

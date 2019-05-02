@@ -19,6 +19,7 @@ int main() {
     Function* wantsNumber = makeFunction(1, wantsANumber);
     waitFor(numberGiver, wantsNumber, 0);
     executeFunction(numberGiver);
-    printf("\nDesired output: 1");
+    printf("\nDesired output: 1\n");
+    sync();
     return 0;
 }

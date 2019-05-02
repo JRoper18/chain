@@ -14,8 +14,18 @@ extern void addValueQ(ValueQueue* q, Value v);
 extern bool isEmptyQ(ValueQueue* q);
 extern Value removeValueQ(ValueQueue* q);
 
-struct Function;
-typedef struct Function Function;
+typedef struct Function {
+	void* exec; //A function that takes in an array of Values, and returns a pointer to a new value.
+	size_t numArgs; //Number of arguments.
+	bool* set; //Array of which valuequeues are just permanently-set values.
+	ValueQueue** values; //Array of pointers to queues of values we've gotten from the functions we're waiting on.
+	struct Notifier* notify; //Head of linked list of other functions to notify when done.
+} Function;
+typedef struct Notifier {
+	Function* listener; //Function doing the listening.
+	int index; //The notifier function pipes it's output to the index'th arg of the listener function.
+	struct Notifier* next; //For linked list capabilities.
+} Notifier;
 typedef struct Notifier Notifier;
 
 extern void executeFunction(Function* function);
