@@ -27,7 +27,7 @@ typedef struct stack
     char* vals;
 } stack;
 
-extern functionInfo** interpret (char*);
+extern functionInfo** interpret (char*, char*);
 extern stack* newStack ();
 extern void push (stack*, char);
 extern char pop (stack*);

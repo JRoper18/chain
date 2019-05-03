@@ -75,19 +75,24 @@ char* infoToString (functionInfo* info)
     int i;
     for (i = 0; i < info->numParams; i++)
     {
-        printf ("%s", paramToString (info->parameters [i]));
+        paramToString (info->parameters [i]);
         printf ("\n");
     }
     return NULL;
 }
 
-functionInfo** interpret (char* fileName)
+functionInfo** interpret (char* fileName, char* to)
 {
     FILE* file = fopen (fileName, "r");
-
+    FILE* cFile = fopen (to, "w");
     if (file == NULL)
     {
         printf ("Error while reading file: %s.\n", fileName);
+        exit (1);
+    }
+    if (cFile == NULL)
+    {
+        printf ("Error writing to file: %s.\n", to);
         exit (1);
     }
 
@@ -113,9 +118,10 @@ functionInfo** interpret (char* fileName)
     bool singleQuote = 0;
     bool doubleQuote = 0;
     bool valid = 1;
+    bool array = 0;
     char prev = '\0';
     char sec = '\0';
-    stack s = newStack ();
+    stack* s = newStack ();
     while ((n = fgetc (file)) != EOF)
     {
         if (oneLineComment)
@@ -248,6 +254,7 @@ functionInfo** interpret (char* fileName)
                         word [letterNum] = '\0';
                     }
                     info [infoNum] = (functionInfo*)malloc (sizeof (functionInfo));
+                    info [infoNum + 1] = NULL;
                     info [infoNum]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters = (param**)malloc (MAX_PARAMS * sizeof (param*));
                     info [infoNum]->numParams = 0;
@@ -278,6 +285,11 @@ functionInfo** interpret (char* fileName)
                      */
                 }
             }
+
+
+
+
+
             else if (state == 1)
             {
                 if (n != ':' && n != ')')
@@ -310,6 +322,20 @@ functionInfo** interpret (char* fileName)
                         letterNum--;
                         word [letterNum] = '\0';
                     }
+                    if (word [letterNum - 1] == ']')
+                    {
+                        array = true;
+                        letterNum -= 2;
+                        if (word [letterNum - 1] == '[')
+                        {
+                            letterNum--;
+                        }
+                        if (word [letterNum - 1] == ' ')
+                        {
+                            letterNum--;
+                        }
+                        word [letterNum] = '\0';
+                    }
                     info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
                     info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
@@ -328,12 +354,25 @@ functionInfo** interpret (char* fileName)
                     info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
                     strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
                     strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    if (array)
+                    {
+                        int a = strlen(word);
+                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a] = '[';
+                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a + 1] = ']';
+                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a + 2] = '\0';
+                    }
                     info [infoNum]->numParams++;
                     letterNum = 0;
                     word [letterNum] = '\0';
+                    array = false;
                     state = 2;
                 }
             }
+
+
+
+
+
             else if (state == 2)
             {
                 if (n == '[')
@@ -341,6 +380,11 @@ functionInfo** interpret (char* fileName)
                     state = 3;
                 }
             }
+
+
+
+
+
             else if (state == 3)
             {
                 if (n != ',' && n != ']')
@@ -366,9 +410,40 @@ functionInfo** interpret (char* fileName)
                     }
                 }
             }
+
+
+
+
+
             else if (state == 4)
             {
-                // TODO
+                if (n == ')')
+                {
+                    state = 5;
+                }
+                else if (n == ',')
+                {
+                    state = 1;
+                }
+            }
+
+
+
+            else if (state == 5)
+            {
+                if (n == '{')
+                {
+                    push (s, '{');
+                }
+                else if (n == '}')
+                {
+                    pop (s);
+                    if (s->height == 0)
+                    {
+                        infoNum++;
+                        state = 0;
+                    }
+                }
             }
         }
         sec = prev;

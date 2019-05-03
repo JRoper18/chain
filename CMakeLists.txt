@@ -10,4 +10,4 @@ add_executable(t1 t1.c value.h value.c functions.c functions.h pool.c pool.h ite
 add_executable(t2 t2.c value.h value.c functions.c functions.h pool.c pool.h iterators.c iterators.h atomic.h atomic.c)
 add_executable(t3 t3.c value.h value.c functions.c functions.h pool.c pool.h iterators.c iterators.h atomic.h atomic.c)
 add_executable(t4 t4.c value.h value.c functions.c functions.h pool.c pool.h iterators.c iterators.h atomic.h atomic.c)
-add_executable(CInt_t0 CInt_t0.c CInterpreter.c CInterpreter.h)
+add_executable(CInt_t0 CInt_test.c CInterpreter.c CInterpreter.h)
