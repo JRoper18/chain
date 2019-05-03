@@ -1,19 +1,16 @@
-#include <stdin.h> \
-/* blah
-*/
+#include <stdio.h>
+int main (int argc: [foo, bar], char **argv: [baz])
+{
+    printf ("It's Alive!\n");
+}
 
 int i = 0;
 int b = 0;
 
-const unsigned int main (int *a: [foo, bar], int* b: [baz])
-{
-    blah;
-}
-
 int foo (int/*:*/a []:[help],
 int b: [pls])
 {
-    do stuff {}
-    a = '\\';
-    b = "\"}";
+    if (a == 0) {}
+    char c = '\\';
+    char d = '\'';
 }

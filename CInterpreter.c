@@ -31,6 +31,7 @@ stack* newStack ()
     stack* ret = (stack*)malloc (sizeof (stack));
     ret->vals = (char*)malloc (STACK_SIZE * sizeof (char));
     ret->height = 0;
+    return ret;
 }
 
 void push (stack* s, char c)
@@ -118,7 +119,6 @@ functionInfo** interpret (char* fileName, char* to)
     bool singleQuote = 0;
     bool doubleQuote = 0;
     bool valid = 1;
-    bool array = 0;
     char prev = '\0';
     char sec = '\0';
     stack* s = newStack ();
@@ -156,6 +156,7 @@ functionInfo** interpret (char* fileName, char* to)
         }
         else if (singleQuote)
         {
+            fprintf (cFile, "%c", n);
             if (n == '\'' && (prev != '\\' || sec == '\\'))
             {
                 singleQuote = false;
@@ -163,6 +164,7 @@ functionInfo** interpret (char* fileName, char* to)
         }
         else if (doubleQuote)
         {
+            fprintf (cFile, "%c", n);
             if (n == '"' && (prev != '\\' || sec == '\\'))
             {
                 doubleQuote = false;
@@ -170,8 +172,10 @@ functionInfo** interpret (char* fileName, char* to)
         }
         else if (hashComment)
         {
-            if (prev != '\\' && n == '\n')
+            fprintf (cFile, "%c", n);
+            if (prev != '\\' && (n == '\n' || n == '\r'))
             {
+                fprintf (cFile, "\n");
                 hashComment = false;
                 if (letterNum > 0 && word [letterNum - 1] != ' ' && word [letterNum - 1] != '\t' && word [letterNum - 1] != '\n' && word [letterNum - 1] != '\r')
                 {
@@ -204,18 +208,21 @@ functionInfo** interpret (char* fileName, char* to)
             }
             else if (n == '#')
             {
+                fprintf (cFile, "%c", n);
                 letterNum = 0;
                 word [letterNum] = '\0';
                 hashComment = true;
             }
             else if (n == '\'')
             {
+                fprintf (cFile, "%c", n);
                 letterNum = 0;
                 word [letterNum] = '\0';
                 singleQuote = true;
             }
             else if (n == '"')
             {
+                fprintf (cFile, "%c", n);
                 letterNum = 0;
                 word [letterNum] = '\0';
                 doubleQuote = true;
@@ -317,6 +324,8 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else
                 {
+                    info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->isArray = false;
                     if (word [letterNum - 1] == ' ')
                     {
                         letterNum--;
@@ -324,7 +333,7 @@ functionInfo** interpret (char* fileName, char* to)
                     }
                     if (word [letterNum - 1] == ']')
                     {
-                        array = true;
+                        info [infoNum]->parameters [info [infoNum]->numParams]->isArray = true;
                         letterNum -= 2;
                         if (word [letterNum - 1] == '[')
                         {
@@ -336,7 +345,6 @@ functionInfo** interpret (char* fileName, char* to)
                         }
                         word [letterNum] = '\0';
                     }
-                    info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
                     info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
                     info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
@@ -354,17 +362,9 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
                     strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
                     strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
-                    if (array)
-                    {
-                        int a = strlen(word);
-                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a] = '[';
-                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a + 1] = ']';
-                        info[infoNum]->parameters[info[infoNum]->numParams]->modifiers[a + 2] = '\0';
-                    }
                     info [infoNum]->numParams++;
                     letterNum = 0;
                     word [letterNum] = '\0';
-                    array = false;
                     state = 2;
                 }
             }
@@ -419,6 +419,41 @@ functionInfo** interpret (char* fileName, char* to)
             {
                 if (n == ')')
                 {
+                    int i;
+                    int j;
+                    functionInfo* inf = info [infoNum];
+                    for (i = 0; i < strlen (inf->modifiers); i++)
+                    {
+                        fprintf (cFile, "%c", inf->modifiers [i]);
+                    }
+                    fprintf (cFile, " ");
+                    for (i = 0; i < strlen (inf->name); i++)
+                    {
+                        fprintf (cFile, "%c", inf->name [i]);
+                    }
+                    fprintf (cFile, " ");
+                    fprintf (cFile, "(");
+                    for (i = 0; i < inf->numParams; i++)
+                    {
+                        for (j = 0; j < strlen (inf->parameters [i]->modifiers); j++)
+                        {
+                            fprintf (cFile, "%c", inf->parameters [i]->modifiers [j]);
+                        }
+                        fprintf (cFile, " ");
+                        for (j = 0; j < strlen (inf->parameters [i]->name); j++)
+                        {
+                            fprintf (cFile, "%c", inf->parameters [i]->name [j]);
+                        }
+                        if (inf->parameters [i]->isArray)
+                        {
+                            fprintf (cFile, " []");
+                        }
+                        if (i != inf->numParams - 1)
+                        {
+                            fprintf (cFile, ", ");
+                        }
+                    }
+                    fprintf (cFile, ")");
                     state = 5;
                 }
                 else if (n == ',')
@@ -431,6 +466,7 @@ functionInfo** interpret (char* fileName, char* to)
 
             else if (state == 5)
             {
+                fprintf (cFile, "%c", n);
                 if (n == '{')
                 {
                     push (s, '{');
@@ -441,6 +477,16 @@ functionInfo** interpret (char* fileName, char* to)
                     if (s->height == 0)
                     {
                         infoNum++;
+                        /*
+                         * TODO
+                         *
+                         * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
+                         * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
+                         * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
+                         * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
+                         * ME SO WE CAN CHANGE IT TOGETHER.
+                         */
+                        fprintf (cFile, "\n");
                         state = 0;
                     }
                 }

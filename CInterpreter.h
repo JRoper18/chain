@@ -11,6 +11,7 @@ typedef struct params
     char* name;
     char** functions;
     int numFuncs;
+    bool isArray;
 } param;
 
 typedef struct functionInfo
