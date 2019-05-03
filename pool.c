@@ -17,36 +17,44 @@
 /*
  * Thread Pooling mechanisms
 */
-static bool halt = 0;
-static ValueQueue* taskQueue = 0;
-static ValueQueue* argQueue = 0;
-static int queueSize = 0;
-static pthread_mutex_t* taskQueueLock = 0;
+volatile static bool wait = 0;
+static bool end = 0;
+volatile int numRun = 0;
+volatile int numAdded = 0;
+volatile static ValueQueue* taskQueue = 0;
+volatile static ValueQueue* argQueue = 0;
+volatile static int queueSize = 0;
+static pthread_mutex_t taskQueueLock;
 static pthread_t availibleThreads[MAX_THREADS];
-static pthread_mutex_t finishLocks[MAX_THREADS];
+static pthread_barrier_t syncBarrier;
 static size_t numThreads;
 void runOnPool(Function* func, Value* args){
 	//Add the function to the queue of functions to run.
-	pthread_mutex_lock(taskQueueLock);
+	pthread_mutex_lock(&taskQueueLock);
+	numAdded++;
 	queueSize++;
 	addValueQ(taskQueue, asPointer(func));
 	addValueQ(argQueue, asPointer(args));
-	pthread_mutex_unlock(taskQueueLock);
+	pthread_mutex_unlock(&taskQueueLock);
 }
 static void pooledThread(int index){
-	while(!halt){
-		pthread_mutex_lock(taskQueueLock);
-		if(isEmptyQ(taskQueue) || isEmptyQ(argQueue)){
-			//Wait a sec, there's nothing to run.
-			pthread_mutex_unlock(taskQueueLock);
-			sleep(0.1);
+	while(!end){
+		pthread_mutex_lock(&taskQueueLock);
+		if(taskQueue->head == 0){
+			//Nothing to run.
+			pthread_mutex_unlock(&taskQueueLock);
+			if(wait){ //We will only wait if there's no more jobs to do.
+				pthread_barrier_wait(&syncBarrier);
+			}
 			continue;
+
 		}
-		pthread_mutex_lock(&finishLocks[index]);
+		//printf("Running task on thread %d\n", index);
 		queueSize--;
+		numRun++;
 		Value funcValue = removeValueQ(taskQueue);
 		Value argValue = removeValueQ(argQueue);
-		pthread_mutex_unlock(taskQueueLock);
+		pthread_mutex_unlock(&taskQueueLock);
 		Function* function = (Function*) funcValue.asPointer;
 		Value (*actualFunc)(Value*) = function->exec;
 		Value* args = (Value*) argValue.asPointer;
@@ -58,8 +66,6 @@ static void pooledThread(int index){
 		else {
 			result = actualFunc(args);
 		}
-		//The args have been used, so we can free them.
-		free(args);
 		//Now, it needs to notify all the things that are dependent on it.
 		Notifier* notifier = function->notify;
 		while(notifier != 0){
@@ -67,36 +73,35 @@ static void pooledThread(int index){
 			notify(notifier, result);
 			notifier = notifier->next;
 		}
-		pthread_mutex_unlock(&finishLocks[index]);
 	}
 	pthread_exit(NULL);
 }
 void initPool(){
 	taskQueue = calloc(1, sizeof(ValueQueue));
 	argQueue = calloc(1, sizeof(ValueQueue));
-	taskQueueLock = malloc(sizeof(pthread_mutex_t));
-	if (pthread_mutex_init(taskQueueLock, NULL) != 0){
+	if (pthread_mutex_init(&taskQueueLock, NULL) != 0){
 		printf("\n mutex init failed\n");
 		exit(0);
 	}
 	//Start out with a number of threads equal to the number of cores in our CPU.
-	numThreads = sysconf(_SC_NPROCESSORS_ONLN);
+	numThreads = 3; //sysconf(_SC_NPROCESSORS_ONLN);
+	if(pthread_barrier_init(&syncBarrier, NULL, numThreads + 1) != 0){
+		printf("\n barrier init failed\n");
+		exit(0);
+	}
 	for(int i = 0; i<numThreads; i++){
-		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, i);
-		if (pthread_mutex_init(&finishLocks[i], NULL) != 0){
-			printf("\n mutex init failed\n");
-			exit(0);
-		}
+		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, (void*) i);
 	}
 }
 void sync(){
-	//Lock all the finish locks in order to ensure that all the threads are done with tasks and that they don't take any more.
-	for(int i = 0; i<numThreads; i++){
-		pthread_mutex_lock(&finishLocks[i]);
-	}
-	//Alright, we're synced.
-	for(int i = 0; i<numThreads; i++){
-		pthread_mutex_unlock(&finishLocks[i]);
-	}
-
+	wait = 1;
+	//Now, we wait until we can pass the barrier.
+	pthread_barrier_wait(&syncBarrier);
+	//Now, if there's anything in the task queue, it needs to finish, so repeat until that's the case.
+	wait = 0;
+}
+void finish(){
+	sync();
+	end = 1;
+	printf("Added: %d Ran: %d\n", numAdded, numRun);
 }

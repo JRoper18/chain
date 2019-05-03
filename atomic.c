@@ -18,10 +18,12 @@ Value deltaAtomic(Atomic* atomic, Value func(Value)){
 	pthread_mutex_unlock(&(atomic->lock));
 	return newVal;
 }
-void incrementAtomic(Atomic* atomic, int amount){
+int incrementAtomic(Atomic* atomic, int amount){
 	pthread_mutex_lock(&(atomic->lock));
-	atomic->val = asInt(atomic->val.asInt + amount);
+	int val = atomic->val.asInt + amount;
+	atomic->val = asInt(val);
 	pthread_mutex_unlock(&(atomic->lock));
+	return val;
 }
 void setAtomic(Atomic* atomic, Value val){
 	pthread_mutex_lock(&(atomic->lock));

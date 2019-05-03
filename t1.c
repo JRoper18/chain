@@ -20,6 +20,6 @@ int main() {
     waitFor(numberGiver, wantsNumber, 0);
     executeFunction(numberGiver);
     printf("\nDesired output: 1\n");
-    sync();
+    finish();
     return 0;
 }

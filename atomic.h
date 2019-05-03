@@ -16,7 +16,7 @@ typedef struct Atomic {
     pthread_mutex_t lock;
 } Atomic;
 Value deltaAtomic(Atomic* atomic, Value func(Value));
-void incrementAtomic(Atomic* atomic, int amount);
+int incrementAtomic(Atomic* atomic, int amount);
 void setAtomic(Atomic* atomic, Value val);
 Value getAtomic(Atomic* atomic);
 Atomic* makeAtomic(Value val);

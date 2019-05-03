@@ -11,4 +11,5 @@
 void runOnPool(Function* func, Value* args);
 void initPool();
 void sync();
+void finish();
 #endif //COMPILER_POOL_H

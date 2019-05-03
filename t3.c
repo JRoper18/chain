@@ -12,11 +12,9 @@ int add1(Value* args){
 }
 void store(Value* args){
 	Atomic* atom = ((Atomic*) args[1].asPointer);
-	int loc = atom->val.asInt;
+	int loc = incrementAtomic(atom, 1) - 1;
 	int val = args[0].asInt;
-	printf("Storing value %d at loc %d\n", val, loc);
 	output[loc] = val;
-	incrementAtomic(atom, 1);
 }
 
 int main() {
@@ -32,7 +30,11 @@ int main() {
 	for(int i = 0; i<10; i++){
 		notify(listNotifier, asInt(data[i]));
 	}
-	printf("Desired output: Should iterate through odd numbers.");
+	finish();
+	for(int i = 0; i<10; i++){
+		printf("At location %d is odd number %d\n", i, output[i]);
+	}
+	printf("Desired output: Should iterate through odd numbers in some order.\n");
 	return 0;
 }
 

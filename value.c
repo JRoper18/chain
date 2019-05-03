@@ -29,5 +29,8 @@ Value removeValueQ(ValueQueue* q) {
 			q->tail = 0;
 		}
 	}
+	else {
+		return asPointer(0);
+	}
 	return r->val;
 }

@@ -25,6 +25,6 @@ int main() {
     waitFor(foFunc, fumFunc, -1);
     executeFunction(feFunc);
     printf("\nDesired output: fefifofum\n");
-    sync();
+    finish();
     return 0;
 }
