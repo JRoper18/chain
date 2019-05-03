@@ -1,5 +1,6 @@
-#include <stdio.h>
-int main (int argc: [foo, bar], char **argv: [baz])
+#include \
+<stdio.h>
+int **main (int argc: [foo, bar], char **argv: [baz])
 {
     printf ("It's Alive!\n");
 }

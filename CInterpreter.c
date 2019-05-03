@@ -119,6 +119,7 @@ functionInfo** interpret (char* fileName, char* to)
     bool singleQuote = 0;
     bool doubleQuote = 0;
     bool valid = 1;
+    bool escaped = 0;
     char prev = '\0';
     char sec = '\0';
     stack* s = newStack ();
@@ -173,9 +174,8 @@ functionInfo** interpret (char* fileName, char* to)
         else if (hashComment)
         {
             fprintf (cFile, "%c", n);
-            if (prev != '\\' && (n == '\n' || n == '\r'))
+            if (!escaped && n == '\r')
             {
-                fprintf (cFile, "\n");
                 hashComment = false;
                 if (letterNum > 0 && word [letterNum - 1] != ' ' && word [letterNum - 1] != '\t' && word [letterNum - 1] != '\n' && word [letterNum - 1] != '\r')
                 {
@@ -183,6 +183,14 @@ functionInfo** interpret (char* fileName, char* to)
                     letterNum++;
                     word [letterNum] = '\0';
                 }
+            }
+            if (n == '\\')
+            {
+                escaped = true;
+            }
+            else
+            {
+                escaped = false;
             }
         }
         else
@@ -266,13 +274,13 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->parameters = (param**)malloc (MAX_PARAMS * sizeof (param*));
                     info [infoNum]->numParams = 0;
                     char* idx = findLastWord (word);
-                    if (*idx == '*')
+                    while (*idx == '*')
                     {
                         *(idx - 1) = '*';
-                        *idx = '\0';
+                        *idx = ' ';
                         idx++;
                     }
-                    else if (*(idx - 1) == ' ')
+                    if (*(idx - 1) == ' ')
                     {
                         *(idx - 1) = '\0';
                     }
@@ -349,13 +357,13 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
                     info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
                     char *idx = findLastWord (word);
-                    if (*idx == '*')
+                    while (*idx == '*')
                     {
                         *(idx - 1) = '*';
-                        *idx = '\0';
+                        *idx = ' ';
                         idx++;
                     }
-                    else if (*(idx - 1) == ' ')
+                    if (*(idx - 1) == ' ')
                     {
                         *(idx - 1) = '\0';
                     }
@@ -484,7 +492,9 @@ functionInfo** interpret (char* fileName, char* to)
                          * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
                          * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
                          * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
-                         * ME SO WE CAN CHANGE IT TOGETHER.
+                         * ME SO WE CAN CHANGE IT TOGETHER.  USE
+                         * fprintf (cFile, "[insert stuff here]");
+                         * TO PRINT OUT TO THE FILE.
                          */
                         fprintf (cFile, "\n");
                         state = 0;
