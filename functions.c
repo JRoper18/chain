@@ -57,21 +57,27 @@ void notify(Notifier* notifier, Value val){
         }
     }
     if(canRun){
-        executeFunction(notifier->listener);
+        executeFunction(notifier->listener, NULL);
     }
 }
 
-void executeFunction(Function* function){
-    //First, assemble the arguments from each arg queue.
-    Value* args = calloc(function->numArgs, sizeof(Value));
-    for(int i = 0; i<function->numArgs; i++){
-    	if(function->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
-    		args[i] = asPointer(function->values[i]);
-    	}
-    	else{
-			args[i] = removeValueQ((function->values)[i]);
-    	}
-    }
+void executeFunction(Function* function, Value* argsIn){
+	Value* args;
+	if(argsIn != NULL){
+		args = argsIn;
+	}
+	else {
+		args = calloc(function->numArgs, sizeof(Value));
+		//First, assemble the arguments from each arg queue.
+		for(int i = 0; i<function->numArgs; i++){
+			if(function->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
+				args[i] = asPointer(function->values[i]);
+			}
+			else{
+				args[i] = removeValueQ((function->values)[i]);
+			}
+		}
+	}
 	runOnPool(function, args);
 }
 /*

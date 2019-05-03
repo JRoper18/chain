@@ -103,5 +103,4 @@ void sync(){
 void finish(){
 	sync();
 	end = 1;
-	printf("Added: %d Ran: %d\n", numAdded, numRun);
 }

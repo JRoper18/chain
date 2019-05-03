@@ -23,7 +23,7 @@ int main() {
     waitFor(feFunc, fiFunc, -1);
     waitFor(fiFunc, foFunc, -1);
     waitFor(foFunc, fumFunc, -1);
-    executeFunction(feFunc);
+    executeFunction(feFunc, NULL);
     printf("\nDesired output: fefifofum\n");
     finish();
     return 0;
