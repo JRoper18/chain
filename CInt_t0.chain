@@ -1,17 +1,12 @@
-#include \
-<stdio.h>
-int **main (int argc: [foo, bar], char **argv: [baz])
+int foo (int a);
+
+int foo (int a: [bar])
 {
-    printf ("It's Alive!\n");
+    // DO SOMETHING
+    return 0;
 }
 
-int i = 0;
-int b = 0;
-
-int foo (int/*:*/a []:[help],
-int b: [pls])
+int bar ()
 {
-    if (a == 0) {}
-    char c = '\\';
-    char d = '\'';
+    return 1;
 }

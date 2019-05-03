@@ -1,0 +1,22 @@
+int foo (int a: [bar]);
+int bar ();
+Function* functions[NUMFUNCTIONS] = {makeFunction(1, foo), makeFunction(0, bar)};
+int foo_helper (int a)
+{
+return a;
+}
+Value foo(Value* args){
+    executeFunction(functions[0], args[0].asInt);
+}
+int bar_helper(){
+    return 0;
+}
+Value bar (Value* args)
+{
+    return asInt(0);
+}
+int main(){
+    initPool();
+    waitFor(functions[0], functions[1], 0);
+    finish();
+}

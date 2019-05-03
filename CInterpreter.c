@@ -258,6 +258,12 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else if (n == ';')
                 {
+                    int i;
+                    for (i = 0; i < letterNum; i++)
+                    {
+                        fprintf (cFile, "%c", word [i]);
+                    }
+                    fprintf (cFile, ";\n", letterNum);
                     letterNum = 0;
                     word [letterNum] = 0;
                 }
@@ -293,11 +299,9 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else
                 {
-                    /*
-                     * TODO
-                     * ----
-                     * Atomic variables.
-                     */
+                    word [letterNum] = '=';
+                    letterNum++;
+                    word [letterNum] = '\0';
                 }
             }
 
@@ -470,9 +474,21 @@ functionInfo** interpret (char* fileName, char* to)
                 }
             }
 
-
-
             else if (state == 5)
+            {
+                if (n == ';')
+                {
+                    fprintf (cFile, ";\n");
+                    state = 7;
+                }
+                else if (n == '{')
+                {
+                    state = 6;
+                }
+                state = 6;
+            }
+
+            else if (state == 6)
             {
                 fprintf (cFile, "%c", n);
                 if (n == '{')
@@ -484,22 +500,26 @@ functionInfo** interpret (char* fileName, char* to)
                     pop (s);
                     if (s->height == 0)
                     {
-                        infoNum++;
-                        /*
-                         * TODO
-                         *
-                         * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
-                         * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
-                         * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
-                         * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
-                         * ME SO WE CAN CHANGE IT TOGETHER.  USE
-                         * fprintf (cFile, "[insert stuff here]");
-                         * TO PRINT OUT TO THE FILE.
-                         */
-                        fprintf (cFile, "\n");
-                        state = 0;
+                        state = 7;
                     }
                 }
+            }
+            else if (state == 7)
+            {
+                infoNum++;
+                /*
+                 * TODO
+                 *
+                 * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
+                 * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
+                 * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
+                 * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
+                 * ME SO WE CAN CHANGE IT TOGETHER.  USE
+                 * fprintf (cFile, "[insert stuff here]");
+                 * TO PRINT OUT TO THE FILE.
+                 */
+                fprintf (cFile, "\n");
+                state = 0;
             }
         }
         sec = prev;
