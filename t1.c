@@ -18,7 +18,7 @@ int main() {
     Function* numberGiver = makeFunction(0, waitForANumber);
     Function* wantsNumber = makeFunction(1, wantsANumber);
     waitFor(numberGiver, wantsNumber, 0);
-    executeFunction(numberGiver);
+    executeFunction(numberGiver, NULL);
     printf("\nDesired output: 1\n");
     finish();
     return 0;

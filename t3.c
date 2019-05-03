@@ -26,9 +26,10 @@ int main() {
 	waitFor(incFunc, strFunc, 0);
 	Atomic* counter = makeAtomic(asInt(0));
 	setArg(strFunc, 1, asPointer(counter));
-	Notifier* listNotifier = makeNotifier(doubleFunc, 0);
 	for(int i = 0; i<10; i++){
-		notify(listNotifier, asInt(data[i]));
+		Value* next = calloc(1, sizeof(Value));
+		next[0] = asInt(data[i]);
+		executeFunction(doubleFunc, next);
 	}
 	finish();
 	for(int i = 0; i<10; i++){
