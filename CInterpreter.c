@@ -7,6 +7,8 @@
 #include <string.h>
 #include "CInterpreter.h"
 
+#define extension "_HELPER_D82KT6KF9"
+
 /* Parameter for a function,
  * includes the type, name, and
  * functions which feed it.
@@ -42,8 +44,12 @@ void push (stack* s, char c)
 
 char pop (stack* s)
 {
-    s->height--;
-    return s->vals [s->height];
+    if (s->height > 0)
+    {
+        s->height--;
+        return s->vals[s->height];
+    }
+    return 0;
 }
 
 char* findLastWord (char* s)
@@ -96,7 +102,7 @@ functionInfo** interpret (char* fileName, char* to)
         printf ("Error writing to file: %s.\n", to);
         exit (1);
     }
-
+    fprintf (cFile, "#include \"functions.h\"\n#include \"pool.h\"\n\nFunction* functions[NUMFUNCTIONS];\n\n");
     char n;
     char* word = (char*)malloc (200 * sizeof (char));
     int letterNum = 0;
@@ -123,6 +129,7 @@ functionInfo** interpret (char* fileName, char* to)
     char prev = '\0';
     char sec = '\0';
     stack* s = newStack ();
+    bool startSlash = false;
     while ((n = fgetc (file)) != EOF)
     {
         if (oneLineComment)
@@ -204,8 +211,9 @@ functionInfo** interpret (char* fileName, char* to)
                     word [letterNum] = '\0';
                 }
             }
-            else if (prev == '/' && n == '/')
+            else if (startSlash && n == '/')
             {
+                startSlash = false;
                 hashComment = false;
                 oneLineComment = true;
                 if (state == 0 || state == 1)
@@ -311,7 +319,7 @@ functionInfo** interpret (char* fileName, char* to)
 
             else if (state == 1)
             {
-                if (n != ':' && n != ')')
+                if (n != ':' && n != ')' && n != ',')
                 {
                     if (n == ' ' || n == '\t' || n == '\n' || n == '\r')
                     {
@@ -333,6 +341,95 @@ functionInfo** interpret (char* fileName, char* to)
                 {
                     valid = 0;
                     state = 4;
+                    if (letterNum != 0)
+                    {
+                        info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
+                        info [infoNum]->parameters [info [infoNum]->numParams]->isArray = false;
+                        if (word [letterNum - 1] == ' ')
+                        {
+                            letterNum--;
+                            word [letterNum] = '\0';
+                        }
+                        if (word [letterNum - 1] == ']')
+                        {
+                            info [infoNum]->parameters [info [infoNum]->numParams]->isArray = true;
+                            letterNum -= 2;
+                            if (word [letterNum - 1] == '[')
+                            {
+                                letterNum--;
+                            }
+                            if (word [letterNum - 1] == ' ')
+                            {
+                                letterNum--;
+                            }
+                            word [letterNum] = '\0';
+                        }
+                        info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
+                        info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
+                        info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
+                        char *idx = findLastWord (word);
+                        while (*idx == '*')
+                        {
+                            *(idx - 1) = '*';
+                            *idx = ' ';
+                            idx++;
+                        }
+                        if (*(idx - 1) == ' ')
+                        {
+                            *(idx - 1) = '\0';
+                        }
+                        info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                        info [infoNum]->numParams++;
+                        letterNum = 0;
+                        word [letterNum] = '\0';
+                    }
+                }
+                else if (n == ',')
+                {
+                    valid = 0;
+                    info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->isArray = false;
+                    if (word [letterNum - 1] == ' ')
+                    {
+                        letterNum--;
+                        word [letterNum] = '\0';
+                    }
+                    if (word [letterNum - 1] == ']')
+                    {
+                        info [infoNum]->parameters [info [infoNum]->numParams]->isArray = true;
+                        letterNum -= 2;
+                        if (word [letterNum - 1] == '[')
+                        {
+                            letterNum--;
+                        }
+                        if (word [letterNum - 1] == ' ')
+                        {
+                            letterNum--;
+                        }
+                        word [letterNum] = '\0';
+                    }
+                    info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
+                    char *idx = findLastWord (word);
+                    while (*idx == '*')
+                    {
+                        *(idx - 1) = '*';
+                        *idx = ' ';
+                        idx++;
+                    }
+                    if (*(idx - 1) == ' ')
+                    {
+                        *(idx - 1) = '\0';
+                    }
+                    info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    info [infoNum]->numParams++;
+                    letterNum = 0;
+                    word [letterNum] = '\0';
                 }
                 else
                 {
@@ -422,12 +519,75 @@ functionInfo** interpret (char* fileName, char* to)
                     }
                 }
             }
+            else if (state == 5)
+            {
+                if (n == ';')
+                {
+                    fprintf (cFile, ";\n");
+                    state = 7;
+                }
+                else if (n == '{')
+                {
+                    fprintf (cFile, "\n{");
+                    state = 6;
+                }
+            }
+
+            else if (state == 6)
+            {
+                if (startSlash)
+                {
+                    fprintf (cFile, '/');
+                }
+                if (n == '/')
+                {
+                    startSlash = true;
+                }
+                else
+                {
+                    fprintf(cFile, "%c", n);
+                }
+                if (n == '{')
+                {
+                    push (s, '{');
+                }
+                else if (n == '}')
+                {
+                    pop (s);
+                    if (s->height <= 0)
+                    {
+                        state = 7;
+                    }
+                }
+                else if (n == '/')
+                {
+                    startSlash = true;
+                }
+            }
+            else if (state == 7)
+            {
+                infoNum++;
+                /*
+                 * TODO
+                 *
+                 * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
+                 * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
+                 * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
+                 * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
+                 * ME SO WE CAN CHANGE IT TOGETHER.  USE
+                 * fprintf (cFile, "[insert stuff here]");
+                 * TO PRINT OUT TO THE FILE.
+                 */
+                fprintf (cFile, "\n");
+                state = 0;
+                valid = true;
+            }
 
 
 
 
 
-            else if (state == 4)
+            if (state == 4)
             {
                 if (n == ')')
                 {
@@ -443,6 +603,7 @@ functionInfo** interpret (char* fileName, char* to)
                     {
                         fprintf (cFile, "%c", inf->name [i]);
                     }
+                    fprintf (cFile, "%s", extension);
                     fprintf (cFile, " ");
                     fprintf (cFile, "(");
                     for (i = 0; i < inf->numParams; i++)
@@ -466,6 +627,41 @@ functionInfo** interpret (char* fileName, char* to)
                         }
                     }
                     fprintf (cFile, ")");
+
+                    bool new = true;
+                    bool same;
+                    for (i = 0; i < infoNum; i++)
+                    {
+                        same = true;
+                        if (strlen (info [infoNum]->name) != strlen (info [i]->name))
+                        {
+                            same = false;
+                        }
+                        else
+                        {
+                            for (j = 0; j < strlen (info [i]->name); j++)
+                            {
+                                if (info [infoNum]->name [j] != info [i]->name [j])
+                                {
+                                    same = false;
+                                }
+                            }
+                        }
+                        if (same == true)
+                        {
+                            new = false;
+                        }
+                    }
+                    if (!new)
+                    {
+                        info [infoNum] = NULL;
+                        infoNum--;
+                    }
+                    else
+                    {
+                        fprintf (cFile, "BLAH\t\t");
+                    }
+
                     state = 5;
                 }
                 else if (n == ',')
@@ -474,53 +670,6 @@ functionInfo** interpret (char* fileName, char* to)
                 }
             }
 
-            else if (state == 5)
-            {
-                if (n == ';')
-                {
-                    fprintf (cFile, ";\n");
-                    state = 7;
-                }
-                else if (n == '{')
-                {
-                    state = 6;
-                }
-                state = 6;
-            }
-
-            else if (state == 6)
-            {
-                fprintf (cFile, "%c", n);
-                if (n == '{')
-                {
-                    push (s, '{');
-                }
-                else if (n == '}')
-                {
-                    pop (s);
-                    if (s->height == 0)
-                    {
-                        state = 7;
-                    }
-                }
-            }
-            else if (state == 7)
-            {
-                infoNum++;
-                /*
-                 * TODO
-                 *
-                 * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
-                 * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
-                 * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
-                 * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
-                 * ME SO WE CAN CHANGE IT TOGETHER.  USE
-                 * fprintf (cFile, "[insert stuff here]");
-                 * TO PRINT OUT TO THE FILE.
-                 */
-                fprintf (cFile, "\n");
-                state = 0;
-            }
         }
         sec = prev;
         prev = n;

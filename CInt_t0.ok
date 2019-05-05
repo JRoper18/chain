@@ -1,5 +1,5 @@
-int foo (int a: [bar]);
 int bar ();
+int foo (int a: [bar]);
 Function* functions[NUMFUNCTIONS] = {makeFunction(1, foo), makeFunction(0, bar)};
 int foo_helper (int a)
 {
