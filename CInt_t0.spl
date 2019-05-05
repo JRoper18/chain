@@ -1,0 +1,16 @@
+int foo (int a: [bar]);
+int bar (int a, int b);
+
+int foo(int a){
+    //SAME CODE
+    return a >> 2;
+}
+int foo_async(int a: [bar])
+{
+    return foo(a);
+}
+
+int bar (int a, int b)
+{
+    return 1;
+}
