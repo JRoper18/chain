@@ -8,6 +8,7 @@ const static int STACK_SIZE = 100;
 typedef struct params
 {
     char* modifiers;
+    char* type;
     char* name;
     char** functions;
     int numFuncs;
@@ -17,6 +18,7 @@ typedef struct params
 typedef struct functionInfo
 {
     char* modifiers;
+    char* type;
     char* name;
     param** parameters;
     int numParams;
