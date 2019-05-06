@@ -90,7 +90,7 @@ void initPool(){
 		exit(0);
 	}
 	for(int i = 0; i<numThreads; i++){
-		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, (void*) i);
+		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, i);
 	}
 }
 void sync(){

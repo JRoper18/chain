@@ -5,6 +5,9 @@
 #include "value.h"
 #include "functions.h"
 #include "pool.h"
+#include "worker.h"
+
+bool _THREAD_POOL_ = 1;
 
 Function* makeFunction(size_t size, void* func){
     Function* new = calloc(1, sizeof(Function));
@@ -78,7 +81,12 @@ void executeFunction(Function* function, Value* argsIn){
 			}
 		}
 	}
-	runOnPool(function, args);
+	if(_THREAD_POOL_){
+		runOnPool(function, args);
+	}
+	else {
+		addTask(function, args);
+	}
 }
 /*
 void cloneFunction(Function* old){
