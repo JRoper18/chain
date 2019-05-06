@@ -7,14 +7,18 @@
 
 #include "functions.h"
 
-typedef struct FunctionWrapper {
-	Function* func;
-	struct FunctionWrapper* prev;
-	struct FunctionWrapper* next;
-} FunctionWrapper;
-typedef struct TaskQ {
-	struct FunctionWrapper* head;
-	struct FunctionWrapper* tail
-} TaskQ;
+#define MAX_LEVEL 100
 
+typedef struct Task {
+	Function* func;
+	Value* args;
+	struct Task* next;
+} Task;
+typedef struct TaskQ {
+	volatile int deepestLevel;
+	struct Task* levels[MAX_LEVEL];
+} TaskQ;
+void addTask(Function* task, Value* args);
+void localSync();
+void makeWorkers();
 #endif //COMPILER_WORKER_H
