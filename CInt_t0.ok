@@ -1,15 +1,22 @@
-int foo (int a: [bar]);
-int bar (int a, int b);
+#include "functions.h"
+#include "pool.h"
 
 Function** functions;
 
-void foo_async(int a){
-    executeFunction(functions[0], &asInt(a));
+int foo (int a);
+void foo_async (int a)
+{
+    executeFunction (functions [0], &asInt (a));
 }
-Value foo_val_casted(Value* a){
-    return asInt(foo_original(a[0].asInt));
+Value foo_HELPER_D82KT6KF9 (Value* a)
+{
+    return asInt (foo_original (a [0].asInt));
 }
-int foo(int a) {
+
+int bar ();
+
+int foo (int a)
+{
     // DO SOMETHING
     return 0;
 }
@@ -19,11 +26,12 @@ int bar ()
     return 1;
 }
 
-int main() {
-    initPool();
-    functions[0] = makeFunction(foo_val_casted, 1);
-    functions[1] = makeFunction(bar, 0);
-    waitFor(functions[1], functions[0], 0);
+int main()
+{
+    initPool ();
+    functions [0] = makeFunction (foo_HELPER_D82KT6KF9, 1);
+    functions [1] = makeFunction (bar, 0);
+    waitFor (functions [1], functions [0], 0);
     //ORIGINAL MAIN
-    finish();
+    finish ();
 }

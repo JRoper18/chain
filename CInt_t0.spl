@@ -1,16 +1,18 @@
-int foo (int a: [bar]);
-int bar (int a, int b);
+unsigned int foo (long long a: [bar]);
+int bar ();
 
-int foo(int a){
+unsigned int foo (long long a: [bar])
+{
     //SAME CODE
     return a >> 2;
 }
-int foo_async(int a: [bar])
-{
-    return foo(a);
-}
 
-int bar (int a, int b)
+int bar ()
 {
     return 1;
+}
+
+int main ()
+{
+
 }

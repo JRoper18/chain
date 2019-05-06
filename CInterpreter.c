@@ -60,10 +60,72 @@ char* findLastWord (char* s)
     return i + 1;
 }
 
+char* toValue (char* in)
+{
+    if (strcmp (in, "char*") == 0)
+    {
+        return "String";
+    }
+    else if (strcmp (in, "char") == 0)
+    {
+        return "Char";
+    }
+    else if (strcmp (in, "short") == 0)
+    {
+        return "Short";
+    }
+    else if (strcmp (in, "int") == 0)
+    {
+        return "Int";
+    }
+    else if (strcmp (in, "long") == 0)
+    {
+        return "Long";
+    }
+    else if (strcmp (in, "long long") == 0)
+    {
+        return "LongLong";
+    }
+    else if (strcmp (in, "uint64_t") == 0)
+    {
+        return "U64";
+    }
+    else if (strcmp (in, "uint32_t") == 0)
+    {
+        return "U32";
+    }
+    else if (strcmp (in, "uint16_t") == 0)
+    {
+        return "U16";
+    }
+    else if (strcmp (in, "uint8_t") == 0)
+    {
+        return "U8";
+    }
+    else
+    {
+        return "Pointer";
+    }
+}
+
+int searchFor (functionInfo** info, int infoNum, char* name)
+{
+    int i;
+    for (i = 0; i < infoNum; i++)
+    {
+        if (strcmp (info [i]->name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return i;
+}
+
 char* paramToString (param* p)
 {
     printf ("\tName: %s\n", p->name);
-    printf ("\tModifiers: %s\n", p->modifiers);
+    printf ("\tType: %s\n", p->type);
+    printf ("\tModifiers: %s%s\n", p->modifiers, (p->isArray) ? " []" : "");
     printf ("\tFeeders: ");
     int i;
     for (i = 0; i < p->numFuncs; i++)
@@ -77,6 +139,7 @@ char* paramToString (param* p)
 char* infoToString (functionInfo* info)
 {
     printf ("Name: %s\n", info->name);
+    printf ("Type: %s\n", info->type);
     printf ("Modifiers: %s\n", info->modifiers);
     printf ("Parameters: %d\n", info->numParams);
     int i;
@@ -102,7 +165,7 @@ functionInfo** interpret (char* fileName, char* to)
         printf ("Error writing to file: %s.\n", to);
         exit (1);
     }
-    fprintf (cFile, "#include \"functions.h\"\n#include \"pool.h\"\n\nFunction* functions[NUMFUNCTIONS];\n\n");
+    fprintf (cFile, "#include \"functions.h\"\n#include \"pool.h\"\n\nFunction** functions;\n\n");
     char n;
     char* word = (char*)malloc (200 * sizeof (char));
     int letterNum = 0;
@@ -271,7 +334,7 @@ functionInfo** interpret (char* fileName, char* to)
                     {
                         fprintf (cFile, "%c", word [i]);
                     }
-                    fprintf (cFile, ";\n", letterNum);
+                    fprintf (cFile, ";\n");
                     letterNum = 0;
                     word [letterNum] = 0;
                 }
@@ -287,20 +350,46 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters = (param**)malloc (MAX_PARAMS * sizeof (param*));
                     info [infoNum]->numParams = 0;
-                    char* idx = findLastWord (word);
-                    while (*idx == '*')
+                    char* idx1 = findLastWord (word);
+                    while (*idx1 == '*')
                     {
-                        *(idx - 1) = '*';
-                        *idx = ' ';
-                        idx++;
+                        *(idx1 - 1) = '*';
+                        *idx1 = ' ';
+                        idx1++;
                     }
-                    if (*(idx - 1) == ' ')
+                    if (*(idx1 - 1) == ' ')
                     {
-                        *(idx - 1) = '\0';
+                        *(idx1 - 1) = '\0';
                     }
-                    info [infoNum]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
-                    strcpy (info [infoNum]->name, idx);
-                    strcpy (info [infoNum]->modifiers, word);
+                    char* idx2 = findLastWord (word);
+                    if (idx2 != word && *(idx2 - 1) == ' ')
+                    {
+                        *(idx2 - 1) = '\0';
+                    }
+                    if (idx2 != word && strcmp (idx2, "long") == 0)
+                    {
+                        if (strcmp (findLastWord (word), "long") == 0)
+                        {
+                            idx2 = findLastWord (word);
+                            *(idx2 + strlen (idx2)) = ' ';
+                            if (idx2 != word && *(idx2 - 1) == ' ')
+                            {
+                                *(idx2 - 1) = '\0';
+                            }
+                        }
+                    }
+                    info [infoNum]->name = (char*)malloc ((strlen (word) - (word - idx1)) * sizeof (char));
+                    info [infoNum]->type = (char*)malloc ((idx1 - idx2) * sizeof (char));
+                    strcpy (info [infoNum]->name, idx1);
+                    if (word != idx2)
+                    {
+                        strcpy (info [infoNum]->modifiers, word);
+                    }
+                    else
+                    {
+                        info [infoNum]->modifiers = "";
+                    }
+                    strcpy (info [infoNum]->type, idx2);
                     letterNum = 0;
                     word [letterNum] = '\0';
                     state = 1;
@@ -339,6 +428,9 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else if (n == ')')
                 {
+                    /*
+                     * TODO EDIT FOR GETTING THE TYPE
+                     */
                     valid = 0;
                     state = 4;
                     if (letterNum != 0)
@@ -367,20 +459,46 @@ functionInfo** interpret (char* fileName, char* to)
                         info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
                         info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
                         info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
-                        char *idx = findLastWord (word);
-                        while (*idx == '*')
+                        char* idx1 = findLastWord (word);
+                        while (*idx1 == '*')
                         {
-                            *(idx - 1) = '*';
-                            *idx = ' ';
-                            idx++;
+                            *(idx1 - 1) = '*';
+                            *idx1 = ' ';
+                            idx1++;
                         }
-                        if (*(idx - 1) == ' ')
+                        if (*(idx1 - 1) == ' ')
                         {
-                            *(idx - 1) = '\0';
+                            *(idx1 - 1) = '\0';
                         }
-                        info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
-                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
-                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                        char* idx2 = findLastWord (word);
+                        if (idx2 != word && *(idx2 - 1) == ' ')
+                        {
+                            *(idx2 - 1) = '\0';
+                        }
+                        if (idx2 != word && strcmp (idx2, "long") == 0)
+                        {
+                            if (strcmp (findLastWord (word), "long") == 0)
+                            {
+                                idx2 = findLastWord (word);
+                                *(idx2 + strlen (idx2)) = ' ';
+                                if (idx2 != word && *(idx2 - 1) == ' ')
+                                {
+                                    *(idx2 - 1) = '\0';
+                                }
+                            }
+                        }
+                        info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx1)) * sizeof (char));
+                        info [infoNum]->parameters [info [infoNum]->numParams]->type = (char*)malloc ((idx1 - idx2) * sizeof (char));
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx1);
+                        if (word != idx2)
+                        {
+                            strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                        }
+                        else
+                        {
+                            info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = "";
+                        }
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->type, idx2);
                         info [infoNum]->numParams++;
                         letterNum = 0;
                         word [letterNum] = '\0';
@@ -413,20 +531,46 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
                     info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
-                    char *idx = findLastWord (word);
-                    while (*idx == '*')
+                    char *idx1 = findLastWord (word);
+                    while (*idx1 == '*')
                     {
-                        *(idx - 1) = '*';
-                        *idx = ' ';
-                        idx++;
+                        *(idx1 - 1) = '*';
+                        *idx1 = ' ';
+                        idx1++;
                     }
-                    if (*(idx - 1) == ' ')
+                    if (*(idx1 - 1) == ' ')
                     {
-                        *(idx - 1) = '\0';
+                        *(idx1 - 1) = '\0';
                     }
-                    info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
-                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
-                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    char* idx2 = findLastWord (word);
+                    if (idx2 != word && *(idx2 - 1) == ' ')
+                    {
+                        *(idx2 - 1) = '\0';
+                    }
+                    if (idx2 != word && strcmp (idx2, "long") == 0)
+                    {
+                        if (strcmp (findLastWord (word), "long") == 0)
+                        {
+                            idx2 = findLastWord (word);
+                            *(idx2 + strlen (idx2)) = ' ';
+                            if (idx2 != word && *(idx2 - 1) == ' ')
+                            {
+                                *(idx2 - 1) = '\0';
+                            }
+                        }
+                    }
+                    info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx1)) * sizeof (char));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->type = (char*)malloc ((idx1 - idx2) * sizeof (char));
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx1);
+                    if (word != idx2)
+                    {
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    }
+                    else
+                    {
+                        info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = "";
+                    }
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->type, idx2);
                     info [infoNum]->numParams++;
                     letterNum = 0;
                     word [letterNum] = '\0';
@@ -457,20 +601,46 @@ functionInfo** interpret (char* fileName, char* to)
                     info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = (char*)malloc (200 * sizeof (char));
                     info [infoNum]->parameters [info [infoNum]->numParams]->functions = (char**)malloc (100 * sizeof (char*));
                     info [infoNum]->parameters [info [infoNum]->numParams]->numFuncs = 0;
-                    char *idx = findLastWord (word);
-                    while (*idx == '*')
+                    char *idx1 = findLastWord (word);
+                    while (*idx1 == '*')
                     {
-                        *(idx - 1) = '*';
-                        *idx = ' ';
-                        idx++;
+                        *(idx1 - 1) = '*';
+                        *idx1 = ' ';
+                        idx1++;
                     }
-                    if (*(idx - 1) == ' ')
+                    if (*(idx1 - 1) == ' ')
                     {
-                        *(idx - 1) = '\0';
+                        *(idx1 - 1) = '\0';
                     }
-                    info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx)) * sizeof (char));
-                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx);
-                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    char* idx2 = findLastWord (word);
+                    if (idx2 != word && *(idx2 - 1) == ' ')
+                    {
+                        *(idx2 - 1) = '\0';
+                    }
+                    if (idx2 != word && strcmp (idx2, "long") == 0)
+                    {
+                        if (strcmp (findLastWord (word), "long") == 0)
+                        {
+                            idx2 = findLastWord (word);
+                            *(idx2 + strlen (idx2)) = ' ';
+                            if (idx2 != word && *(idx2 - 1) == ' ')
+                            {
+                                *(idx2 - 1) = '\0';
+                            }
+                        }
+                    }
+                    info [infoNum]->parameters [info [infoNum]->numParams]->name = (char*)malloc ((strlen (word) - (word - idx1)) * sizeof (char));
+                    info [infoNum]->parameters [info [infoNum]->numParams]->type = (char*)malloc ((idx1 - idx2) * sizeof (char));
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->name, idx1);
+                    if (word != idx2)
+                    {
+                        strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->modifiers, word);
+                    }
+                    else
+                    {
+                        info [infoNum]->parameters [info [infoNum]->numParams]->modifiers = "";
+                    }
+                    strcpy (info [infoNum]->parameters [info [infoNum]->numParams]->type, idx2);
                     info [infoNum]->numParams++;
                     letterNum = 0;
                     word [letterNum] = '\0';
@@ -528,7 +698,33 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else if (n == '{')
                 {
+                    functionInfo* inf = info [infoNum];
+                    param* cur;
                     fprintf (cFile, "\n{");
+                    if (strcmp (inf->name, "main") == 0)
+                    {
+                        fprintf (cFile, "\n\tinitPool ();");
+                        int i;
+                        int j;
+                        int k;
+                        for (i = 0; i < infoNum; i++)
+                        {
+                            inf = info [i];
+                            fprintf (cFile, "\n\tfunctions [%d] = makeFunction (%s%s, %d);", i, inf->name, extension, inf->numParams);
+                        }
+                        for (i = 0; i < infoNum; i++)
+                        {
+                            inf = info [i];
+                            for (j = 0; j < inf->numParams; j++)
+                            {
+                                cur = inf->parameters [j];
+                                for (k = 0; k < cur->numFuncs; k++)
+                                {
+                                    fprintf (cFile, "\n\twaitFor (functions [%d], functions [%d], %d);", searchFor(info, infoNum, cur->functions [k]), i, j);
+                                }
+                            }
+                        }
+                    }
                     state = 6;
                 }
             }
@@ -537,17 +733,17 @@ functionInfo** interpret (char* fileName, char* to)
             {
                 if (startSlash)
                 {
-                    fprintf (cFile, '/');
+                    fprintf (cFile, "/");
                 }
                 if (n == '/')
                 {
                     startSlash = true;
                 }
-                else
+                else if (n != '{' && n != '}')
                 {
                     fprintf(cFile, "%c", n);
                 }
-                if (n == '{')
+                else if (n == '{')
                 {
                     push (s, '{');
                 }
@@ -556,10 +752,14 @@ functionInfo** interpret (char* fileName, char* to)
                     pop (s);
                     if (s->height <= 0)
                     {
+                        if (strcmp (info [infoNum]->name, "main") == 0)
+                        {
+                            fprintf (cFile, "\tfinish ();\n}");
+                        }
                         state = 7;
                     }
                 }
-                else if (n == '/')
+                if (n == '/')
                 {
                     startSlash = true;
                 }
@@ -586,24 +786,23 @@ functionInfo** interpret (char* fileName, char* to)
 
 
 
-
+            /*
+             * TODO add comment/quote ignorance
+             */
             if (state == 4)
             {
                 if (n == ')')
                 {
-                    int i;
+                    /*int i;
                     int j;
                     functionInfo* inf = info [infoNum];
-                    for (i = 0; i < strlen (inf->modifiers); i++)
-                    {
-                        fprintf (cFile, "%c", inf->modifiers [i]);
-                    }
-                    fprintf (cFile, " ");
+                    fprintf (cFile, "%s%s", inf->modifiers, (strcmp (inf->modifiers, "") == 0) ? "" : " ");
+                    fprintf (cFile, "%s ", inf->type);
                     for (i = 0; i < strlen (inf->name); i++)
                     {
                         fprintf (cFile, "%c", inf->name [i]);
                     }
-                    fprintf (cFile, "%s", extension);
+                    fprintf (cFile, "_async");
                     fprintf (cFile, " ");
                     fprintf (cFile, "(");
                     for (i = 0; i < inf->numParams; i++)
@@ -612,7 +811,7 @@ functionInfo** interpret (char* fileName, char* to)
                         {
                             fprintf (cFile, "%c", inf->parameters [i]->modifiers [j]);
                         }
-                        fprintf (cFile, " ");
+                        fprintf (cFile, "%s ", inf->parameters [i]->type);
                         for (j = 0; j < strlen (inf->parameters [i]->name); j++)
                         {
                             fprintf (cFile, "%c", inf->parameters [i]->name [j]);
@@ -659,8 +858,97 @@ functionInfo** interpret (char* fileName, char* to)
                     }
                     else
                     {
-                        fprintf (cFile, "BLAH\t\t");
+                        fprintf (cFile, "\n{\n\texecuteFunction (functions [%d]", infoNum);
+                        int i;
+                        for (i = 0; i < info [infoNum]->numParams; i++)
+                        {
+                            fprintf (cFile, ", &as%s (%s)", toValue (info [infoNum]->parameters [i]->type), info [infoNum]->parameters [i]->name);
+                        }
+                        fprintf (cFile, ");\n}");
                     }
+                    */
+                    int i;
+                    int j;
+                    functionInfo* inf = info [infoNum];
+                    param* cur;
+
+                    bool new = true;
+                    bool same;
+                    for (i = 0; i < infoNum; i++)
+                    {
+                        same = true;
+                        if (strlen (info [infoNum]->name) != strlen (info [i]->name))
+                        {
+                            same = false;
+                        }
+                        else
+                        {
+                            for (j = 0; j < strlen (info [i]->name); j++)
+                            {
+                                if (info [infoNum]->name [j] != info [i]->name [j])
+                                {
+                                    same = false;
+                                }
+                            }
+                        }
+                        if (same == true)
+                        {
+                            new = false;
+                        }
+                    }
+
+                    if (!new)
+                    {
+                        info [infoNum] = NULL;
+                        infoNum--;
+                    }
+                    else
+                    {
+                        fprintf (cFile, "void %s_async (", inf->name);
+                        for (i = 0; i < inf->numParams; i++)
+                        {
+                            cur = inf->parameters [i];
+                            fprintf (cFile, "%s%s", (i == 0) ? "" : ", ", cur->modifiers);
+                            fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : "", cur->type, cur->name);
+                        }
+                        fprintf (cFile, ")\n{\n\texecuteFunction (functions [%d]", infoNum);
+                        for (i = 0; i < inf->numParams; i++)
+                        {
+                            cur = inf->parameters [i];
+                            fprintf (cFile, ", &as%s (%s)", toValue (cur->type), cur->name);
+                        }
+                        fprintf (cFile, ");\n}\n\nValue %s%s (", inf->name, extension);
+                        for (i = 0; i < inf->numParams; i++)
+                        {
+                            cur = inf->parameters [i];
+                            fprintf (cFile, "%sValue* %s", i == 0 ? "" : ", ", cur->name);
+                        }
+                        fprintf (cFile, ")\n{\n\t");
+                        if (strcmp (inf->type, "void") != 0)
+                        {
+                            fprintf (cFile, "return as%s (", toValue (inf->type));
+                        }
+                        fprintf (cFile, "%s (", inf->name);
+                        for (i = 0; i < inf->numParams; i++)
+                        {
+                            cur = inf->parameters [i];
+                            fprintf (cFile, "%s%s [%d].as%s", i == 0 ? "" : " ", cur->name, i, toValue (cur->type));
+                        }
+                        if (strcmp (inf->type, "void") != 0)
+                        {
+                            fprintf (cFile, ")");
+                        }
+                        fprintf (cFile, ");\n}\n\n");
+                    }
+                    fprintf (cFile, "%s%s%s %s(", inf->modifiers, strcmp (inf->modifiers, "") == 0 ? "" : " ", inf->type, inf->name);
+
+                    for (i = 0; i < inf->numParams; i++)
+                    {
+                        cur = inf->parameters [i];
+                        fprintf (cFile, "%s%s", (i == 0) ? "" : ", ", cur->modifiers);
+                        fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : "", cur->type, cur->name);
+                    }
+                    fprintf (cFile, ")");
 
                     state = 5;
                 }
