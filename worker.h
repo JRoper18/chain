@@ -21,4 +21,5 @@ typedef struct TaskQ {
 void addTask(Function* task, Value* args);
 void localSync();
 void makeWorkers();
+void finishAllWorkers();
 #endif //COMPILER_WORKER_H

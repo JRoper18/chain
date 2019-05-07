@@ -7,7 +7,7 @@
 #include "pool.h"
 #include "worker.h"
 
-bool _THREAD_POOL_ = 1;
+bool _THREAD_POOL_ = 0;
 
 Function* makeFunction(size_t size, void* func){
     Function* new = calloc(1, sizeof(Function));

@@ -4,15 +4,31 @@
 
 #include <unistd.h>
 #include <pthread.h>
+#include <syscall.h>
 #include "worker.h"
 #include "functions.h"
 
+#define MAX_THREADS 30
+TaskQ* makeTaskQ(){
+	TaskQ* new = calloc(1, sizeof(TaskQ));
+	new->deepestLevel = 0;
+	for(int i = 0; i<MAX_LEVEL; i++){
+		new->levels[i] = 0;
+	}
+}
 void addLevelTask(TaskQ* q, Task* task, int level){
 	Task* head = q->levels[level];
-	while(head != 0){
-		head = head->next;
+	task->next = 0;
+	if(head == 0){
+		q->levels[level] = task;
 	}
-	head = task;
+	else {
+		while(head->next != 0){
+			head = head->next;
+		}
+		head->next = task;
+	}
+	q->deepestLevel = (q->deepestLevel < level) ? level : q->deepestLevel;
 }
 
 bool areTasks(TaskQ* q){
@@ -27,39 +43,88 @@ Task* removeDeepest(TaskQ* q){
 	t->next = 0;
 	return t;
 }
+Task* stealShallowest(TaskQ* q){
+	Task* stolen = 0;
+	int level = 0;
+	while(stolen == 0){
+		if(level > 99){
+			//Checked every level.
+			return 0;
+		}
+		//Go to the shallowest, farthest task in the other ready queue.
+		Task* beforeStolen = q->levels[level];
+		if(beforeStolen == 0){ //No tasks on this level.
+			level++;
+			continue;
+		}
+		if(beforeStolen->next == 0){
+			//Only one task at this level. Take it.
+			q->levels[level] = 0; //Remove it.
+			stolen = beforeStolen;
+			break;
+		}
+		while(beforeStolen->next->next != 0){
+			beforeStolen = beforeStolen->next;
+		}
+		//The stolen task is the one after beforeStolen
+		stolen = beforeStolen->next;
+		//Remove the task from the queue by severing it from beforeStolen.
+		beforeStolen->next = 0;
+	}
+	if(level == q->deepestLevel){
+		//We removed something from the deepest level.
+		int newLevel = q->deepestLevel;
+		while(q->levels[newLevel] == 0 && newLevel != 0){
+			newLevel--;
+		}
+		q->deepestLevel = newLevel;
+	}
+	return stolen;
+}
+
+
+
 static bool finish;
 
-TaskQ** taskQueues;
-int* threadLevels;
+TaskQ* taskQueues[MAX_THREADS];
+int threadLevels[MAX_THREADS];
+int threadIds[MAX_THREADS];
+volatile bool init = 0;
 static int numThreads;
-pthread_t* threads;
+pthread_t threads[MAX_THREADS];
+int getThreadId(){
+	return syscall(__NR_gettid);
+}
+int getIndexFromThreadId(int threadId){
+	for(int i = 0; i<numThreads; i++){
+		if(threadIds[i] == threadId){
+			return i;
+		}
+	}
+	return -1;
+}
+
 void threadProgram(int index){
+	threadIds[index] = getThreadId();
+	while(!init){
+		//Wait until all the threads are done being created
+	}
 	while(!finish){
 		Task* task;
 		if(!areTasks(taskQueues[index])){
 			//If there's no tasks for us to do, we STEAL from another random thread.
-
-			int otherIndex = index;
-			while(otherIndex == index){
-				otherIndex = (rand() % numThreads);
-			} //Get a DIFFERENT thread to steal from.
-			TaskQ* otherQ = taskQueues[otherIndex];
-			Task* stolen = 0;
-			int level = 0;
-			while(stolen == 0){
-				//Go to the shallowest, farthest task in the other ready queue.
-				stolen = otherQ->levels[level];
-				if(stolen == 0){
-					level++;
-					continue;
-				}
-				while(stolen->next != 0){
-					stolen = stolen->next;
-				}
+			TaskQ* otherQ;
+			do {
+				int otherIndex = index;
+				while(otherIndex == index){
+					otherIndex = (rand() % numThreads);
+				} //Get a DIFFERENT thread to steal from.
+				otherQ = taskQueues[otherIndex];
+			} while(!areTasks(otherQ));
+			task = stealShallowest(otherQ);
+			if(task == 0){
+				continue; //No tasks here.
 			}
-			threadLevels[index] = level;
-			//Do that task.
-			task = stolen;
 		}
 		else {
 			//We have a task! The arguments for it should be in the task object.
@@ -111,33 +176,48 @@ void threadProgram(int index){
 	}
 	pthread_exit(NULL);
 }
+
 void makeWorkers(){
+	_THREAD_POOL_ = 0;
 	numThreads = sysconf(_SC_NPROCESSORS_ONLN);
-	taskQueues = calloc(numThreads, sizeof(TaskQ));
-	threads = calloc(numThreads, sizeof(pthread_t));
-	threadLevels = calloc(numThreads, sizeof(int));
-	for(int i = 0; i<numThreads; i++){
-		taskQueues[i] = calloc(1, sizeof(TaskQ));
-		pthread_create(&threads[i], NULL, (void*) threadProgram, i);
+	taskQueues[0] = makeTaskQ();
+	threads[0] = pthread_self();
+	threadIds[0] = getThreadId();
+	for(uint64_t i = 1; i<numThreads; i++){
+		TaskQ* newQ = makeTaskQ();
+		taskQueues[i] = newQ;
+		pthread_create(&threads[i], NULL, (void*) threadProgram, (void*) i);
 	}
+	init = 1;
 }
 
 void addTask(Function* func, Value* args){
 	//Who's trying to add a task right now?
-	int threadId = pthread_self();
-	int indexId = threadId - 1;
+	int threadId = getThreadId();
+	int indexId = getIndexFromThreadId(threadId);
 	Task* newTask = malloc(sizeof(Task));
 	newTask->func = func;
 	newTask->args = args;
 	//Add it to the tail of the queue, next to be done.
-	addLevelTask(taskQueues[indexId], newTask, threadLevels[indexId]);
+	addLevelTask(taskQueues[indexId], newTask, threadLevels[indexId] + 1);
 }
 void localSync(){
-	int threadId = pthread_self();
-	int indexId = threadId - 1;
-	int currentLevel = taskQueues[indexId]->deepestLevel;
-	while(taskQueues[indexId]->deepestLevel >= currentLevel){
+
+}
+void finishAllWorkers(){
+	while(true){
+		for(int i = 0; i<numThreads; i++){
+			int currentLevel = taskQueues[i]->deepestLevel;
+			if(currentLevel == 0){
+				//Wait until EVERYTHING is done.
+				while(taskQueues[i]->deepestLevel != 0){}
+			}
+			else {
+				while(taskQueues[i]->deepestLevel >= currentLevel){}
+			}
+			//Done.
+		}
+		break;
 	}
-	//Done.
 }
 

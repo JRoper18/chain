@@ -14,6 +14,8 @@ extern void addValueQ(ValueQueue* q, Value v);
 extern bool isEmptyQ(ValueQueue* q);
 extern Value removeValueQ(ValueQueue* q);
 
+extern bool _THREAD_POOL_;
+
 typedef struct Function {
 	void* exec; //A function that takes in an array of Values, and returns a pointer to a new value.
 	size_t numArgs; //Number of arguments.

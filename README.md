@@ -1,4 +1,4 @@
-# Chain
+# Spool
 A language built off making functions and chaining them together in cause-effect relationships.
 
 ## Todo
