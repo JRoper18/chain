@@ -14,6 +14,7 @@ TaskQ* makeTaskQ(){
 	new->deepestLevel = 0;
 	for(int i = 0; i<MAX_LEVEL; i++){
 		new->levels[i] = 0;
+		new->tasksRemaining[i] = 0;
 	}
 }
 void addLevelTask(TaskQ* q, Task* task, int level){
@@ -28,6 +29,7 @@ void addLevelTask(TaskQ* q, Task* task, int level){
 		}
 		head->next = task;
 	}
+	q->tasksRemaining[level]++;
 	q->deepestLevel = (q->deepestLevel < level) ? level : q->deepestLevel;
 }
 
@@ -139,6 +141,9 @@ void threadProgram(int index){
 		else {
 			result = func(task->args);
 		}
+		//It should decrement the counter on the spawning taskQ.
+		int spawnId = task->spawningId;
+		taskQueues[spawnId]->tasksRemaining[task->level]--;
 		//Now, it needs to notify all the things that are dependent on it.
 		Notifier* notifier = task->func->notify;
 		while(notifier != 0){
@@ -169,7 +174,10 @@ void threadProgram(int index){
 				Task* newTask = calloc(1, sizeof(Task));
 				newTask->func = notifier->listener;
 				newTask->args = args;
-				addLevelTask(taskQueues[index], newTask, taskQueues[index]->deepestLevel);
+				newTask->spawningId = index;
+				int deepest = taskQueues[index]->deepestLevel;
+				newTask->level = deepest;
+				addLevelTask(taskQueues[index], newTask, deepest);
 			}
 			notifier = notifier->next;
 		}
@@ -198,26 +206,52 @@ void addTask(Function* func, Value* args){
 	Task* newTask = malloc(sizeof(Task));
 	newTask->func = func;
 	newTask->args = args;
+	newTask->spawningId = indexId;
+	newTask->level = threadLevels[indexId] + 1;
 	//Add it to the tail of the queue, next to be done.
 	addLevelTask(taskQueues[indexId], newTask, threadLevels[indexId] + 1);
 }
 void localSync(){
-
+	while(!init){} //Wait until everything is started.
+	while(true){
+		bool remaining = false;
+		int threadId = getThreadId();
+		int indexId = getIndexFromThreadId(threadId);
+		int levelToSyncBelow = taskQueues[indexId]->deepestLevel;
+		for(int j = levelToSyncBelow; j<MAX_LEVEL; j++){
+			if(taskQueues[indexId]->tasksRemaining[j] > 0){
+				//There's a task remaining.
+				remaining = true;
+				break;
+			}
+		}
+		if(!remaining){
+			break;
+		}
+	}
 }
 void finishAllWorkers(){
+	while(!init){} //Wait until everything is started.
 	while(true){
+		bool remaining = false;
 		for(int i = 0; i<numThreads; i++){
-			int currentLevel = taskQueues[i]->deepestLevel;
-			if(currentLevel == 0){
-				//Wait until EVERYTHING is done.
-				while(taskQueues[i]->deepestLevel != 0){}
+			bool breakOut = false;
+			for(int j = 0; j<MAX_LEVEL; j++){
+				if(taskQueues[i]->tasksRemaining[j] > 0){
+					//There's a task remaining.
+					remaining = true;
+					breakOut = true;
+					break;
+				}
 			}
-			else {
-				while(taskQueues[i]->deepestLevel >= currentLevel){}
+			if(breakOut){
+				break;
 			}
 			//Done.
 		}
-		break;
+		if(!remaining){
+			break;
+		}
 	}
 }
 

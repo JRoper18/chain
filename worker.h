@@ -12,10 +12,13 @@
 typedef struct Task {
 	Function* func;
 	Value* args;
+	int spawningId;
+	int level;
 	struct Task* next;
 } Task;
 typedef struct TaskQ {
 	volatile int deepestLevel;
+	volatile int tasksRemaining[MAX_LEVEL];
 	struct Task* levels[MAX_LEVEL];
 } TaskQ;
 void addTask(Function* task, Value* args);
