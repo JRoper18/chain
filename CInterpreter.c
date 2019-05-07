@@ -60,51 +60,65 @@ char* findLastWord (char* s)
     return i + 1;
 }
 
-char* toValue (char* in)
+char* toValue (char* in, bool isArray)
 {
-    if (strcmp (in, "char*") == 0)
+    if (!isArray)
     {
-        return "String";
-    }
-    else if (strcmp (in, "char") == 0)
-    {
-        return "Char";
-    }
-    else if (strcmp (in, "short") == 0)
-    {
-        return "Short";
-    }
-    else if (strcmp (in, "int") == 0)
-    {
-        return "Int";
-    }
-    else if (strcmp (in, "long") == 0)
-    {
-        return "Long";
-    }
-    else if (strcmp (in, "long long") == 0)
-    {
-        return "LongLong";
-    }
-    else if (strcmp (in, "uint64_t") == 0)
-    {
-        return "U64";
-    }
-    else if (strcmp (in, "uint32_t") == 0)
-    {
-        return "U32";
-    }
-    else if (strcmp (in, "uint16_t") == 0)
-    {
-        return "U16";
-    }
-    else if (strcmp (in, "uint8_t") == 0)
-    {
-        return "U8";
+        if (strcmp (in, "char*") == 0)
+        {
+            return "String";
+        }
+        else if (strcmp (in, "char") == 0)
+        {
+            return "Char";
+        }
+        else if (strcmp (in, "short") == 0)
+        {
+            return "Short";
+        }
+        else if (strcmp (in, "int") == 0)
+        {
+            return "Int";
+        }
+        else if (strcmp (in, "long") == 0)
+        {
+            return "Long";
+        }
+        else if (strcmp (in, "long long") == 0)
+        {
+            return "LongLong";
+        }
+        else if (strcmp (in, "uint64_t") == 0)
+        {
+            return "U64";
+        }
+        else if (strcmp (in, "uint32_t") == 0)
+        {
+            return "U32";
+        }
+        else if (strcmp (in, "uint16_t") == 0)
+        {
+            return "U16";
+        }
+        else if (strcmp (in, "uint8_t") == 0)
+        {
+            return "U8";
+        }
+        else
+        {
+            return "Pointer";
+        }
     }
     else
     {
-        return "Pointer";
+        if (strcmp (in, "char") == 0)
+        {
+            return "String";
+        }
+        else
+        {
+            return "Pointer";
+        }
     }
 }
 
@@ -187,7 +201,6 @@ functionInfo** interpret (char* fileName, char* to)
     bool hashComment = 0;
     bool singleQuote = 0;
     bool doubleQuote = 0;
-    bool valid = 1;
     bool escaped = 0;
     char prev = '\0';
     char sec = '\0';
@@ -428,10 +441,6 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else if (n == ')')
                 {
-                    /*
-                     * TODO EDIT FOR GETTING THE TYPE
-                     */
-                    valid = 0;
                     state = 4;
                     if (letterNum != 0)
                     {
@@ -506,7 +515,6 @@ functionInfo** interpret (char* fileName, char* to)
                 }
                 else if (n == ',')
                 {
-                    valid = 0;
                     info [infoNum]->parameters [info [infoNum]->numParams] = (param*)malloc (200 * sizeof (param));
                     info [infoNum]->parameters [info [infoNum]->numParams]->isArray = false;
                     if (word [letterNum - 1] == ' ')
@@ -767,28 +775,13 @@ functionInfo** interpret (char* fileName, char* to)
             else if (state == 7)
             {
                 infoNum++;
-                /*
-                 * TODO
-                 *
-                 * JACK, THIS IS THE SECTION WHERE YOU PUT YOUR CODE.  I HAVE
-                 * THE STRUCT DEFINITIONS IN CInterpreter.h, AND THE STRUCT YOU
-                 * NEED TO LOOK IN IS info [infoNum].  IDK IF YOU NEED TO ALTER
-                 * THE FUNCTION HEADER TO MAKE IT A THREAD, IF SO, PLEASE TEXT
-                 * ME SO WE CAN CHANGE IT TOGETHER.  USE
-                 * fprintf (cFile, "[insert stuff here]");
-                 * TO PRINT OUT TO THE FILE.
-                 */
                 fprintf (cFile, "\n");
                 state = 0;
-                valid = true;
             }
 
 
 
 
-            /*
-             * TODO add comment/quote ignorance
-             */
             if (state == 4)
             {
                 if (n == ')')
@@ -909,13 +902,17 @@ functionInfo** interpret (char* fileName, char* to)
                         {
                             cur = inf->parameters [i];
                             fprintf (cFile, "%s%s", (i == 0) ? "" : ", ", cur->modifiers);
-                            fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : "", cur->type, cur->name);
+                            fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : " ", cur->type, cur->name);
+                            if (cur->isArray)
+                            {
+                                fprintf (cFile, " []");
+                            }
                         }
                         fprintf (cFile, ")\n{\n\texecuteFunction (functions [%d]", infoNum);
                         for (i = 0; i < inf->numParams; i++)
                         {
                             cur = inf->parameters [i];
-                            fprintf (cFile, ", &as%s (%s)", toValue (cur->type), cur->name);
+                            fprintf (cFile, ", &as%s (%s)", toValue (cur->type, cur->isArray), cur->name);
                         }
                         fprintf (cFile, ");\n}\n\nValue %s%s (", inf->name, extension);
                         for (i = 0; i < inf->numParams; i++)
@@ -926,13 +923,14 @@ functionInfo** interpret (char* fileName, char* to)
                         fprintf (cFile, ")\n{\n\t");
                         if (strcmp (inf->type, "void") != 0)
                         {
-                            fprintf (cFile, "return as%s (", toValue (inf->type));
+                            cur = inf->parameters [i];
+                            fprintf (cFile, "return as%s (", toValue (inf->type, cur->isArray));
                         }
                         fprintf (cFile, "%s (", inf->name);
                         for (i = 0; i < inf->numParams; i++)
                         {
                             cur = inf->parameters [i];
-                            fprintf (cFile, "%s%s [%d].as%s", i == 0 ? "" : " ", cur->name, i, toValue (cur->type));
+                            fprintf (cFile, "%s%s [%d].as%s", i == 0 ? "" : " ", cur->name, i, toValue (cur->type, cur->isArray));
                         }
                         if (strcmp (inf->type, "void") != 0)
                         {
@@ -946,7 +944,11 @@ functionInfo** interpret (char* fileName, char* to)
                     {
                         cur = inf->parameters [i];
                         fprintf (cFile, "%s%s", (i == 0) ? "" : ", ", cur->modifiers);
-                        fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : "", cur->type, cur->name);
+                        fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : " ", cur->type, cur->name);
+                        if (cur->isArray)
+                        {
+                            fprintf (cFile, " []");
+                        }
                     }
                     fprintf (cFile, ")");
 
