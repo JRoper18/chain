@@ -88,16 +88,31 @@ void executeFunction(Function* function, Value* argsIn){
 		addTask(function, args);
 	}
 }
-/*
-void cloneFunction(Function* old){
+
+
+Function* cloneFunction(Function* old, bool cloneNofifiers){
 	int size = old->numArgs;
-	for(int i = 0; i<size; i++){
-		//Clone each queue.
-		ValueQueue* oldQ = old->values[i];
-		Value queueMem = removeValueQ(oldQ);
-		while(queueMem != 0){
-			queueMem = removeValueQ(oldQ);
+	if(cloneNofifiers){
+		Function* newFunc = calloc(1, sizeof(Function));
+		newFunc->numArgs = size;
+		newFunc->exec = old->exec;
+		newFunc->notify = old->notify;
+		for(int i = 0; i<size; i++){
+			newFunc->set[i] = old->set[i];
+			if(newFunc->set[i]){
+				newFunc->values[i] = old->values[i];
+			}
+			else{
+				//Clone each queue.
+				ValueQueue* newQ = calloc(1, sizeof(ValueQueue));
+				ValueQueue* oldQ = old->values[i];
+				while(!isEmptyQ(oldQ)){
+					addValueQ(newQ, removeValueQ(oldQ));
+				}
+				newFunc->values[i] = newQ;
+			}
 		}
+		return newFunc;
 	}
+	return makeFunction(size, old->exec);
 }
- */

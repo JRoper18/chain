@@ -37,4 +37,5 @@ extern void waitFor(Function* before, Function* after, int pipeToIndex);
 extern void notify(Notifier* notifier, Value val);
 extern void executeFunction(Function* function, Value* args);
 void setArg(Function* function, size_t argNum, Value in);
+Function* cloneFunction(Function* old, bool cloneNotifiers);
 #endif //COMPILER_FUNCTIONS_H

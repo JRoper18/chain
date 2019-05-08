@@ -29,6 +29,7 @@ void addLevelTask(TaskQ* q, Task* task, int level){
 		}
 		head->next = task;
 	}
+	//Increment the number of tasks remaining.
 	q->tasksRemaining[level]++;
 	q->deepestLevel = (q->deepestLevel < level) ? level : q->deepestLevel;
 }
@@ -37,11 +38,13 @@ bool areTasks(TaskQ* q){
 	return q->deepestLevel != 0;
 }
 Task* removeDeepest(TaskQ* q){
-	Task* t = q->levels[q->deepestLevel];
-	q->levels[q->deepestLevel] = t->next;
-	while(q->levels[q->deepestLevel] == 0){
-		q->deepestLevel--;
+	int deepestLevel = q->deepestLevel;
+	Task* t = q->levels[deepestLevel];
+	q->levels[deepestLevel] = t->next;
+	while(q->levels[deepestLevel] == 0 && deepestLevel > 0){
+		deepestLevel--;
 	}
+	q->deepestLevel = deepestLevel;
 	t->next = 0;
 	return t;
 }
@@ -79,6 +82,7 @@ Task* stealShallowest(TaskQ* q){
 		while(q->levels[newLevel] == 0 && newLevel != 0){
 			newLevel--;
 		}
+
 		q->deepestLevel = newLevel;
 	}
 	return stolen;
@@ -141,9 +145,6 @@ void threadProgram(int index){
 		else {
 			result = func(task->args);
 		}
-		//It should decrement the counter on the spawning taskQ.
-		int spawnId = task->spawningId;
-		taskQueues[spawnId]->tasksRemaining[task->level]--;
 		//Now, it needs to notify all the things that are dependent on it.
 		Notifier* notifier = task->func->notify;
 		while(notifier != 0){
@@ -174,13 +175,17 @@ void threadProgram(int index){
 				Task* newTask = calloc(1, sizeof(Task));
 				newTask->func = notifier->listener;
 				newTask->args = args;
-				newTask->spawningId = index;
-				int deepest = taskQueues[index]->deepestLevel;
-				newTask->level = deepest;
-				addLevelTask(taskQueues[index], newTask, deepest);
+				newTask->spawningId = task->spawningId;
+				newTask->level = task->level;
+				addLevelTask(taskQueues[newTask->spawningId], newTask, newTask->level);
 			}
 			notifier = notifier->next;
 		}
+		//It should decrement the counter on the spawning taskQ.
+		int spawnId = task->spawningId;
+		taskQueues[spawnId]->tasksRemaining[task->level]--;
+		//The task is done. Free it from memory.
+		//free(task);
 	}
 	pthread_exit(NULL);
 }
@@ -209,7 +214,7 @@ void addTask(Function* func, Value* args){
 	newTask->spawningId = indexId;
 	newTask->level = threadLevels[indexId] + 1;
 	//Add it to the tail of the queue, next to be done.
-	addLevelTask(taskQueues[indexId], newTask, threadLevels[indexId] + 1);
+	addLevelTask(taskQueues[indexId], newTask, newTask->level);
 }
 void localSync(){
 	while(!init){} //Wait until everything is started.
@@ -236,6 +241,7 @@ void finishAllWorkers(){
 		bool remaining = false;
 		for(int i = 0; i<numThreads; i++){
 			bool breakOut = false;
+
 			for(int j = 0; j<MAX_LEVEL; j++){
 				if(taskQueues[i]->tasksRemaining[j] > 0){
 					//There's a task remaining.
