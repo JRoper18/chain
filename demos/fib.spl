@@ -1,0 +1,18 @@
+unsigned int foo (long long a: [bar]);
+int bar ();
+
+unsigned int foo (long long a: [bar])
+{
+    //SAME CODE
+    return a >> 2;
+}
+
+int bar ()
+{
+    return 1;
+}
+
+int main ()
+{
+
+}
