@@ -49,17 +49,20 @@ void print(int index, char ch)
     printf("char at index %d is %c", index, ch);
 }
 int main ();
+
 int main()
 {
-	makeWorkers ();
-	functions [0] = makeFunction (processData1_HELPER_D82KT6KF9, 1);
-	functions [1] = makeFunction (processData2_HELPER_D82KT6KF9, 1);
-	functions [2] = makeFunction (print_HELPER_D82KT6KF9, 2);
+	initPool ();
+	functions = calloc(100, sizeof(Function*));
+
+	functions [0] = makeFunction (1, processData1_HELPER_D82KT6KF9);
+	functions [1] = makeFunction (1, processData2_HELPER_D82KT6KF9);
+	functions [2] = makeFunction (2, print_HELPER_D82KT6KF9);
 	waitFor (functions [0], functions [2], 0);
 	waitFor (functions [1], functions [2], 1);
     for(int i = 0; i<10; i++){
         processData1_async(i);
         processData2_async(i);
     }
-	finishAllWorkers ();
+	finish ();
 }

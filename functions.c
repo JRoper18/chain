@@ -7,7 +7,7 @@
 #include "pool.h"
 #include "worker.h"
 
-bool _SAFE_MODE_ = 0;
+bool _SAFE_MODE_ = 1;
 
 Function* makeFunction(size_t size, void* func){
     Function* new = calloc(1, sizeof(Function));

@@ -27,6 +27,7 @@
  */
 
 const static int MAX_PARAMS = 20;
+const static int MAX_FUNCTIONS = 100;
 
 stack* newStack ()
 {
@@ -183,7 +184,7 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
     char n;
     char* word = (char*)malloc (200 * sizeof (char));
     int letterNum = 0;
-    functionInfo** info = (functionInfo**)malloc (100 * sizeof (functionInfo*));
+    functionInfo** info = (functionInfo**)malloc (MAX_FUNCTIONS * sizeof (functionInfo*));
     int infoNum = 0;
     int state = 0;
     /* STATE OF THE PROGRAM
@@ -717,19 +718,22 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                     fprintf (cFile, "\n{");
                     if (strcmp (inf->name, "main") == 0)
                     {
-                    	if(safeMode){
+                    	if(safeMode){ //Setup the pool or workers, depending on safe mode or not.
 							fprintf (cFile, "\n\tinitPool ();");
                     	}
                     	else {
 							fprintf (cFile, "\n\tmakeWorkers ();");
                     	}
+                    	//Allocate the array of functions.
+
+                    	fprintf(cFile, "\n\tfunctions = calloc(%d, sizeof(Function*));\n", MAX_FUNCTIONS);
                         int i;
                         int j;
                         int k;
                         for (i = 0; i < infoNum; i++)
                         {
                             inf = info [i];
-                            fprintf (cFile, "\n\tfunctions [%d] = makeFunction (%s%s, %d);", i, inf->name, extension, inf->numParams);
+                            fprintf (cFile, "\n\tfunctions [%d] = makeFunction (%d, %s%s);", i, inf->numParams, inf->name, extension);
                         }
                         for (i = 0; i < infoNum; i++)
                         {
