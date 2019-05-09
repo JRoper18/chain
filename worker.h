@@ -17,7 +17,6 @@ typedef struct Task {
 	struct Task* next;
 } Task;
 typedef struct TaskQ {
-	volatile int deepestLevel;
 	volatile int tasksRemaining[MAX_LEVEL];
 	struct Task* levels[MAX_LEVEL];
 } TaskQ;

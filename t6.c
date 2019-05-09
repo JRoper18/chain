@@ -32,7 +32,7 @@ Value fib(Value* args){
 		Value n1Arg = asInt(n - 1);
 		executeFunction(subFibFunc, &n1Arg);
 		Value n_2Val = asInt(n-2);
-		int n_2 = fib(&n_2Val).asInt;
+ 		int n_2 = fib(&n_2Val).asInt;
 		localSync();
 		return asInt(n_1 + n_2);
 	}
@@ -43,7 +43,7 @@ int main() {
 	storeFunction = makeFunction(2, storeInt);
 	fibFunc = makeFunction(1, fib);
 	Function* printFunction = makeFunction(1, print);
-	Value arg1 = asInt(2);
+	Value arg1 = asInt(10);
 	waitFor(fibFunc, printFunction, 0);
 	executeFunction(fibFunc, &arg1);
 	finishAllWorkers();

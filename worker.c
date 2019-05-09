@@ -5,13 +5,13 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <syscall.h>
+#include <setjmp.h>
 #include "worker.h"
 #include "functions.h"
 
 #define MAX_THREADS 30
 TaskQ* makeTaskQ(){
 	TaskQ* new = calloc(1, sizeof(TaskQ));
-	new->deepestLevel = 0;
 	for(int i = 0; i<MAX_LEVEL; i++){
 		new->levels[i] = 0;
 		new->tasksRemaining[i] = 0;
@@ -31,20 +31,22 @@ void addLevelTask(TaskQ* q, Task* task, int level){
 	}
 	//Increment the number of tasks remaining.
 	q->tasksRemaining[level]++;
-	q->deepestLevel = (q->deepestLevel < level) ? level : q->deepestLevel;
 }
-
+int deepestLevel(TaskQ* q){
+	for(int i = MAX_LEVEL - 1; i>= 0; i--){
+		if(q->levels[i] != 0){
+			return i;
+		}
+	}
+	return 0;
+}
 bool areTasks(TaskQ* q){
-	return q->deepestLevel != 0;
+	return deepestLevel(q) != 0;
 }
 Task* removeDeepest(TaskQ* q){
-	int deepestLevel = q->deepestLevel;
-	Task* t = q->levels[deepestLevel];
-	q->levels[deepestLevel] = t->next;
-	while(q->levels[deepestLevel] == 0 && deepestLevel > 0){
-		deepestLevel--;
-	}
-	q->deepestLevel = deepestLevel;
+	int dLevel = deepestLevel(q);
+	Task* t = q->levels[dLevel];
+	q->levels[dLevel] = t->next;
 	t->next = 0;
 	return t;
 }
@@ -76,15 +78,6 @@ Task* stealShallowest(TaskQ* q){
 		//Remove the task from the queue by severing it from beforeStolen.
 		beforeStolen->next = 0;
 	}
-	if(level == q->deepestLevel){
-		//We removed something from the deepest level.
-		int newLevel = q->deepestLevel;
-		while(q->levels[newLevel] == 0 && newLevel != 0){
-			newLevel--;
-		}
-
-		q->deepestLevel = newLevel;
-	}
 	return stolen;
 }
 
@@ -109,7 +102,64 @@ int getIndexFromThreadId(int threadId){
 	}
 	return -1;
 }
-
+Task* steal(int indexToIgnore){
+	TaskQ* otherQ;
+	int otherIndex = indexToIgnore;
+	while(otherIndex == indexToIgnore){
+		otherIndex = (rand() % numThreads);
+	} //Get a DIFFERENT thread to steal from.
+	otherQ = taskQueues[otherIndex];
+	return stealShallowest(otherQ);
+}
+void doTask(Task* task){
+	Value (*func)(Value*) = task->func->exec;
+	Value result;
+	if(task->func->numArgs == 0){
+		result = func(NULL);
+	}
+	else {
+		result = func(task->args);
+	}
+	//Now, it needs to notify all the things that are dependent on it.
+	Notifier* notifier = task->func->notify;
+	while(notifier != 0){
+		Value* args = calloc(notifier->listener->numArgs, sizeof(Value));
+		if(notifier->index >= 0){ //A negative index signals that we don't pipe output at all.
+			addValueQ(notifier->listener->values[notifier->index], result);
+		}
+		//Check if the function can execute something.
+		bool canRun = true;
+		for(int i = 0; i<notifier->listener->numArgs; i++){
+			ValueQueue* queue = notifier->listener->values[i];
+			bool set = notifier->listener->set[i];
+			if(set){
+				args[i] = (Value) asPointer(queue);
+			}
+			else {
+				if(isEmptyQ(queue)){
+					//Can't run, don't have all of our args.
+					canRun = false;
+					free(args);
+					break;
+				}
+				args[i] = removeValueQ(queue);
+			}
+		}
+		if(canRun){
+			//All the things after this run at the same level.
+			Task* newTask = calloc(1, sizeof(Task));
+			newTask->func = notifier->listener;
+			newTask->args = args;
+			newTask->spawningId = task->spawningId;
+			newTask->level = task->level;
+			addLevelTask(taskQueues[newTask->spawningId], newTask, newTask->level);
+		}
+		notifier = notifier->next;
+	}
+	//It should decrement the counter on the spawning taskQ.
+	int spawnId = task->spawningId;
+	taskQueues[spawnId]->tasksRemaining[task->level]--;
+}
 void threadProgram(int index){
 	threadIds[index] = getThreadId();
 	while(!init){
@@ -119,71 +169,19 @@ void threadProgram(int index){
 		Task* task;
 		if(!areTasks(taskQueues[index])){
 			//If there's no tasks for us to do, we STEAL from another random thread.
-			TaskQ* otherQ;
-			do {
-				int otherIndex = index;
-				while(otherIndex == index){
-					otherIndex = (rand() % numThreads);
-				} //Get a DIFFERENT thread to steal from.
-				otherQ = taskQueues[otherIndex];
-			} while(!areTasks(otherQ));
-			task = stealShallowest(otherQ);
+			task = steal(index);
 			if(task == 0){
 				continue; //No tasks here.
 			}
 		}
 		else {
 			//We have a task! The arguments for it should be in the task object.
-			threadLevels[index] = taskQueues[index]->deepestLevel;
 			task = removeDeepest(taskQueues[index]);
 		}
-		Value (*func)(Value*) = task->func->exec;
-		Value result;
-		if(task->func->numArgs == 0){
-			result = func(NULL);
-		}
-		else {
-			result = func(task->args);
-		}
-		//Now, it needs to notify all the things that are dependent on it.
-		Notifier* notifier = task->func->notify;
-		while(notifier != 0){
-			Value* args = calloc(notifier->listener->numArgs, sizeof(Value));
-			if(notifier->index >= 0){ //A negative index signals that we don't pipe output at all.
-				addValueQ(notifier->listener->values[notifier->index], result);
-			}
-			//Check if the function can execute something.
-			bool canRun = true;
-			for(int i = 0; i<notifier->listener->numArgs; i++){
-				ValueQueue* queue = notifier->listener->values[i];
-				bool set = notifier->listener->set[i];
-				if(set){
-					args[i] = (Value) asPointer(queue);
-				}
-				else {
-					if(isEmptyQ(queue)){
-						//Can't run, don't have all of our args.
-						canRun = false;
-						free(args);
-						break;
-					}
-					args[i] = removeValueQ(queue);
-				}
-			}
-			if(canRun){
-				//All the things after this run at the same level.
-				Task* newTask = calloc(1, sizeof(Task));
-				newTask->func = notifier->listener;
-				newTask->args = args;
-				newTask->spawningId = task->spawningId;
-				newTask->level = task->level;
-				addLevelTask(taskQueues[newTask->spawningId], newTask, newTask->level);
-			}
-			notifier = notifier->next;
-		}
-		//It should decrement the counter on the spawning taskQ.
-		int spawnId = task->spawningId;
-		taskQueues[spawnId]->tasksRemaining[task->level]--;
+		int previousLevel = threadLevels[index];
+		threadLevels[index] = task->level;
+		doTask(task);
+		threadLevels[index] = previousLevel;
 		//The task is done. Free it from memory.
 		//free(task);
 	}
@@ -199,6 +197,7 @@ void makeWorkers(){
 	for(uint64_t i = 1; i<numThreads; i++){
 		TaskQ* newQ = makeTaskQ();
 		taskQueues[i] = newQ;
+		threadLevels[i] = 0;
 		pthread_create(&threads[i], NULL, (void*) threadProgram, (void*) i);
 	}
 	init = 1;
@@ -222,8 +221,8 @@ void localSync(){
 		bool remaining = false;
 		int threadId = getThreadId();
 		int indexId = getIndexFromThreadId(threadId);
-		int levelToSyncBelow = taskQueues[indexId]->deepestLevel;
-		for(int j = levelToSyncBelow; j<MAX_LEVEL; j++){
+		int currentLevel = threadLevels[indexId];
+		for(int j = currentLevel + 1; j<MAX_LEVEL; j++){
 			if(taskQueues[indexId]->tasksRemaining[j] > 0){
 				//There's a task remaining.
 				remaining = true;
@@ -232,6 +231,19 @@ void localSync(){
 		}
 		if(!remaining){
 			break;
+		}
+		else {
+			//Crud, that's a stall. Time to steal someone else's task!
+			//So, save our call stack and switch to another (stolen) task/function.
+			Task* stolen = steal(indexId);
+			if(stolen == 0){
+				//Nothing to steal ):
+				continue;
+			}
+			int previousLevel = threadLevels[indexId];
+			threadLevels[indexId] = stolen->level;
+			doTask(stolen);
+			threadLevels[indexId] = previousLevel;
 		}
 	}
 }

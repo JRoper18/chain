@@ -51,10 +51,7 @@ int main() {
 	waitFor(fibFunc, printFunction, 0);
 	foreach_int(fibFunc, data, 10);
 	localSync();
-	printf("Desired output: Should iterate through first 10 fibonacci numbers in any order. \n");
-
-	finishAllWorkers();
-	printf("Desired output: Should print the 2nd fibonacci number 2 and halt.\n");
+	printf("Desired output: Should iterate through numbers 1-10 in any order, with some but hopefully not many duplicates. \n");
 
 	return 0;
 }
