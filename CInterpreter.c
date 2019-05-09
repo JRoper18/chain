@@ -923,13 +923,18 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                             {
                                 fprintf (cFile, " []");
                             }
-                        }
-                        fprintf (cFile, ")\n{\n\texecuteFunction (functions [%d]", infoNum);
-                        for (i = 0; i < inf->numParams; i++)
-                        {
-                            cur = inf->parameters [i];
-                            fprintf (cFile, ", &as%s (%s)", toValue (cur->type, cur->isArray), cur->name);
-                        }
+						}
+                        fprintf(cFile, "){\n");
+                        for(i = 0; i<inf->numParams; i++){
+							cur = inf->parameters [i];
+							fprintf(cFile, "\n\tValue temp%d = as%s (%s);", i, toValue (cur->type, cur->isArray), cur->name);
+						}
+						fprintf (cFile, "\n\texecuteFunction (functions [%d]", infoNum);
+						for (i = 0; i < inf->numParams; i++)
+						{
+							cur = inf->parameters [i];
+							fprintf (cFile, ", &temp%d", i);
+						}
                         fprintf (cFile, ");\n}\n\nValue %s%s (", inf->name, extension);
                         for (i = 0; i < inf->numParams; i++)
                         {

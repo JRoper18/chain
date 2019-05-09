@@ -21,6 +21,7 @@ typedef struct functionInfo
     char* type;
     char* name;
     param** parameters;
+    char* inner;
     int numParams;
 } functionInfo;
 

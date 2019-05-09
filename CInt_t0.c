@@ -5,9 +5,10 @@ Function** functions;
 
 int data1[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 'a''b''c''d''e''f''g''h''i''j'};
-void processData1_async (int i)
-{
-	executeFunction (functions [0], &asInt (i));
+void processData1_async (int i){
+
+	Value temp0 = asInt (i);
+	executeFunction (functions [0], &temp0);
 }
 
 Value processData1_HELPER_D82KT6KF9 (Value* i)
@@ -19,9 +20,10 @@ int processData1(int i)
 {
     return data1[i];
 
-void processData2_async (int i)
-{
-	executeFunction (functions [1], &asInt (i));
+void processData2_async (int i){
+
+	Value temp0 = asInt (i);
+	executeFunction (functions [1], &temp0);
 }
 
 Value processData2_HELPER_D82KT6KF9 (Value* i)
@@ -33,9 +35,11 @@ char processData2(int i)
 {
     return data2[i];
 
-void print_async (int index, char ch)
-{
-	executeFunction (functions [2], &asInt (index), &asChar (ch));
+void print_async (int index, char ch){
+
+	Value temp0 = asInt (index);
+	Value temp1 = asChar (ch);
+	executeFunction (functions [2], &temp0, &temp1);
 }
 
 Value print_HELPER_D82KT6KF9 (Value* index, Value* ch)
@@ -47,8 +51,8 @@ void print(int index, char ch)
 {
     printf("char at index %d is %c", index, ch);
 
-void main_async ()
-{
+void main_async (){
+
 	executeFunction (functions [3]);
 }
 
