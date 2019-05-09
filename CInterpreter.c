@@ -208,6 +208,10 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
     bool startSlash = false;
     while ((n = fgetc (file)) != EOF)
     {
+        if (n == '\n')
+        {
+            //fprintf (cFile, "%d\t", state);
+        }
         if (oneLineComment)
         {
             if (n == '\n')
@@ -412,6 +416,8 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                     word [letterNum] = '=';
                     letterNum++;
                     word [letterNum] = '\0';
+                    fprintf (cFile, "%s", word);
+                    state = 8;
                 }
             }
 
@@ -778,7 +784,7 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                         state = 7;
                         //fprintf(cFile, "BLAH");
                     }
-                    else
+                    //else
                     {
                         fprintf (cFile, "}");
                     }
@@ -793,6 +799,17 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                 infoNum++;
                 fprintf (cFile, "\n");
                 state = 0;
+            }
+            else if (state == 8)
+            {
+                fprintf (cFile, "%c", n);
+                if (n == ';')
+                {
+                    letterNum = 0;
+                    word [letterNum] = '\0';
+                    state = 0;
+                    fprintf (cFile, "\n");
+                }
             }
 
 
@@ -913,6 +930,18 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                     }
                     else
                     {
+                        fprintf (cFile, "%s%s%s %s (", inf->modifiers, strcmp (inf->modifiers, "") == 0 ? "" : " ", inf->type, inf->name);
+                        for (i = 0; i < inf->numParams; i++)
+                        {
+                            cur = inf->parameters [i];
+                            fprintf (cFile, "%s%s", (i == 0) ? "" : ", ", cur->modifiers);
+                            fprintf (cFile, "%s%s %s", (strcmp (cur->modifiers, "") == 0) ? "" : " ", cur->type, cur->name);
+                            if (cur->isArray)
+                            {
+                                fprintf (cFile, " []");
+                            }
+                        }
+                        fprintf(cFile, ");\n");
                         fprintf (cFile, "void %s_async (", inf->name);
                         for (i = 0; i < inf->numParams; i++)
                         {
@@ -932,7 +961,6 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
 						fprintf (cFile, "\n\texecuteFunction (functions [%d]", infoNum);
 						for (i = 0; i < inf->numParams; i++)
 						{
-							cur = inf->parameters [i];
 							fprintf (cFile, ", &temp%d", i);
 						}
                         fprintf (cFile, ");\n}\n\nValue %s%s (", inf->name, extension);
