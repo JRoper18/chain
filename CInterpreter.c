@@ -165,7 +165,7 @@ char* infoToString (functionInfo* info)
     return NULL;
 }
 
-functionInfo** interpret (char* fileName, char* to)
+functionInfo** interpret (char* fileName, char* to, bool safeMode)
 {
     FILE* file = fopen (fileName, "r");
     FILE* cFile = fopen (to, "w");
@@ -711,7 +711,12 @@ functionInfo** interpret (char* fileName, char* to)
                     fprintf (cFile, "\n{");
                     if (strcmp (inf->name, "main") == 0)
                     {
-                        fprintf (cFile, "\n\tinitPool ();");
+                    	if(safeMode){
+							fprintf (cFile, "\n\tinitPool ();");
+                    	}
+                    	else {
+							fprintf (cFile, "\n\tmakeWorkers ();");
+                    	}
                         int i;
                         int j;
                         int k;
@@ -762,7 +767,12 @@ functionInfo** interpret (char* fileName, char* to)
                     {
                         if (strcmp (info [infoNum]->name, "main") == 0)
                         {
-                            fprintf (cFile, "\tfinish ();\n}");
+                        	if(safeMode){
+								fprintf (cFile, "\tfinish ();\n}");
+                        	}
+                        	else {
+								fprintf (cFile, "\tfinishAllWorkers ();\n}");
+							}
                         }
                         state = 7;
                     }

@@ -30,7 +30,7 @@ typedef struct stack
     char* vals;
 } stack;
 
-extern functionInfo** interpret (char*, char*);
+extern functionInfo** interpret (char*, char*, bool safeMode);
 extern stack* newStack ();
 extern void push (stack*, char);
 extern char pop (stack*);
