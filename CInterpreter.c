@@ -780,11 +780,11 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                         {
                         	if (safeMode)
                         	{
-								fprintf (cFile, "\tfinish ();\n}");
+								fprintf (cFile, "\tfinish ();\n");
                         	}
                         	else
                         	{
-								fprintf (cFile, "\tfinishAllWorkers ();\n}");
+								fprintf (cFile, "\tfinishAllWorkers ();\n");
 							}
                         }
                         state = 7;
