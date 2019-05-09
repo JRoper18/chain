@@ -778,10 +778,12 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                     {
                         if (strcmp (info [infoNum]->name, "main") == 0)
                         {
-                        	if(safeMode){
+                        	if (safeMode)
+                        	{
 								fprintf (cFile, "\tfinish ();\n}");
                         	}
-                        	else {
+                        	else
+                        	{
 								fprintf (cFile, "\tfinishAllWorkers ();\n}");
 							}
                         }
@@ -957,8 +959,9 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                                 fprintf (cFile, " []");
                             }
 						}
+                        fprintf (cFile, ")\n{\n");
                         if(inf->numParams > 0){ //Make the parameter array.
-							fprintf(cFile, "){\n\tValue argsIn[%d] = {", inf->numParams);
+							fprintf(cFile, "\tValue argsIn[%d] = {", inf->numParams);
 							for(i = 0; i<inf->numParams; i++){
 								cur = inf->parameters [i];
 								if(i == inf->numParams - 1){
