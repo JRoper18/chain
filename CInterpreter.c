@@ -179,7 +179,7 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
         printf ("Error writing to file: %s.\n", to);
         exit (1);
     }
-    fprintf (cFile, "#include \"functions.h\"\n#include \"pool.h\"\n\nFunction** functions;\n\n");
+    fprintf (cFile, "#include \"lib.h\" \nFunction** functions;\n\n");
     char n;
     char* word = (char*)malloc (200 * sizeof (char));
     int letterNum = 0;
@@ -953,22 +953,40 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                                 fprintf (cFile, " []");
                             }
 						}
-                        fprintf(cFile, "){\n");
-                        for(i = 0; i<inf->numParams; i++){
-							cur = inf->parameters [i];
-							fprintf(cFile, "\n\tValue temp%d = as%s (%s);", i, toValue (cur->type, cur->isArray), cur->name);
+                        if(inf->numParams > 0){ //Make the parameter array.
+							fprintf(cFile, "){\n\tValue argsIn[%d] = {", inf->numParams);
+							for(i = 0; i<inf->numParams; i++){
+								cur = inf->parameters [i];
+								if(i == inf->numParams - 1){
+									//Last one. Don't add a comma to the end, finish the array instead.
+									fprintf(cFile, "as%s (%s)};", toValue (cur->type, cur->isArray), cur->name);
+								}
+								else {
+									fprintf(cFile, "as%s (%s),", toValue (cur->type, cur->isArray), cur->name);
+								}
+							}
+							fprintf (cFile, "\n\texecuteFunction (functions [%d], argsIn", infoNum); //Put it in.
 						}
-						fprintf (cFile, "\n\texecuteFunction (functions [%d]", infoNum);
+                        else {
+                        	//Just give it NULL as the arguments.
+							fprintf (cFile, "\n\texecuteFunction (functions [%d], NULL", infoNum); //Put it in.
+
+						}
+                        /* executeFunciton only takes 1 argument, the array OF arguments.
 						for (i = 0; i < inf->numParams; i++)
 						{
-							fprintf (cFile, ", &temp%d", i);
+							fprintf (cFile, ", argsIn");
 						}
+                         */
                         fprintf (cFile, ");\n}\n\nValue %s%s (", inf->name, extension);
+                        /* Same deal. Async functions can only take a single arg.
                         for (i = 0; i < inf->numParams; i++)
                         {
                             cur = inf->parameters [i];
                             fprintf (cFile, "%sValue* %s", i == 0 ? "" : ", ", cur->name);
                         }
+                         */
+						fprintf (cFile, "Value* inputArgs");
                         fprintf (cFile, ")\n{\n\t");
                         if (strcmp (inf->type, "void") != 0)
                         {
@@ -978,8 +996,13 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                         fprintf (cFile, "%s (", inf->name);
                         for (i = 0; i < inf->numParams; i++)
                         {
+                        	if(i == inf->numParams - 1){ //No comma
+								fprintf (cFile, "inputArgs[%d].as%s", i, toValue (cur->type, cur->isArray));
+                        	}
+                        	else {
+								fprintf (cFile, "inputArgs[%d].as%s , ", i, toValue (cur->type, cur->isArray));
+							}
                             cur = inf->parameters [i];
-                            fprintf (cFile, "%s%s [%d].as%s", i == 0 ? "" : " ", cur->name, i, toValue (cur->type, cur->isArray));
                         }
                         if (strcmp (inf->type, "void") != 0)
                         {

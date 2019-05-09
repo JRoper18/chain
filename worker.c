@@ -189,7 +189,7 @@ void threadProgram(int index){
 }
 
 void makeWorkers(){
-	_THREAD_POOL_ = 0;
+	_SAFE_MODE_ = 0;
 	numThreads = sysconf(_SC_NPROCESSORS_ONLN);
 	taskQueues[0] = makeTaskQ();
 	threads[0] = pthread_self();
@@ -215,7 +215,7 @@ void addTask(Function* func, Value* args){
 	//Add it to the tail of the queue, next to be done.
 	addLevelTask(taskQueues[indexId], newTask, newTask->level);
 }
-void localSync(){
+void localWorkerSync(){
 	while(!init){} //Wait until everything is started.
 	while(true){
 		bool remaining = false;

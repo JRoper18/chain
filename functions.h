@@ -14,7 +14,7 @@ extern void addValueQ(ValueQueue* q, Value v);
 extern bool isEmptyQ(ValueQueue* q);
 extern Value removeValueQ(ValueQueue* q);
 
-extern bool _THREAD_POOL_;
+extern bool _SAFE_MODE_;
 
 typedef struct Function {
 	void* exec; //A function that takes in an array of Values, and returns a pointer to a new value.
@@ -30,7 +30,6 @@ typedef struct Notifier {
 } Notifier;
 typedef struct Notifier Notifier;
 
-extern void executeFunction(Function* function, Value* args);
 extern Function* makeFunction(size_t size, void* func);
 extern Notifier* makeNotifier(Function* listener, size_t index);
 extern void waitFor(Function* before, Function* after, int pipeToIndex);

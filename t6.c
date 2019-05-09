@@ -33,7 +33,7 @@ Value fib(Value* args){
 		executeFunction(subFibFunc, &n1Arg);
 		Value n_2Val = asInt(n-2);
  		int n_2 = fib(&n_2Val).asInt;
-		localSync();
+		localWorkerSync();
 		return asInt(n_1 + n_2);
 	}
 }

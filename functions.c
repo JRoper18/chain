@@ -7,7 +7,7 @@
 #include "pool.h"
 #include "worker.h"
 
-bool _THREAD_POOL_ = 0;
+bool _SAFE_MODE_ = 0;
 
 Function* makeFunction(size_t size, void* func){
     Function* new = calloc(1, sizeof(Function));
@@ -66,7 +66,7 @@ void notify(Notifier* notifier, Value val){
 
 void executeFunction(Function* function, Value* argsIn){
 	Value* args;
-	if(argsIn != NULL){
+	if(argsIn != NULL || function->numArgs == 0){
 		args = argsIn;
 	}
 	else {
@@ -81,7 +81,7 @@ void executeFunction(Function* function, Value* argsIn){
 			}
 		}
 	}
-	if(_THREAD_POOL_){
+	if(_SAFE_MODE_){
 		runOnPool(function, args);
 	}
 	else {

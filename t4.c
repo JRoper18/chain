@@ -25,11 +25,11 @@ int main() {
 	Function* printFunction = makeFunction(1, print);
 	Function* fibFunction = makeFunction(1, fib);
 	foreach_int(printFunction, data, 10);
-	sync();
+	localSafeSync();
 	printf("Desired output: Should iterate through numbers 1-10 in any order. \n");
 	waitFor(fibFunction, printFunction, 0);
 	foreach_int(fibFunction, data, 10);
-	sync();
+	localSafeSync();
 	printf("Desired output: Should iterate through first 10 fibonacci numbers in any order. \n");
 
 	return 0;

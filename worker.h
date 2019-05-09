@@ -21,7 +21,7 @@ typedef struct TaskQ {
 	struct Task* levels[MAX_LEVEL];
 } TaskQ;
 void addTask(Function* task, Value* args);
-void localSync();
+void localWorkerSync();
 void makeWorkers();
 void finishAllWorkers();
 #endif //COMPILER_WORKER_H

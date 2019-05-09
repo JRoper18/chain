@@ -1,20 +1,17 @@
-#include "functions.h"
-#include "pool.h"
-
+#include "lib.h" 
 Function** functions;
 
 int data1[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 char data2[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
 int processData1 (int i);
 void processData1_async (int i){
-
-	Value temp0 = asInt (i);
-	executeFunction (functions [0], &temp0);
+	Value argsIn[1] = {asInt (i)};
+	executeFunction (functions [0], argsIn);
 }
 
-Value processData1_HELPER_D82KT6KF9 (Value* i)
+Value processData1_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	return asInt (processData1 (i [0].asInt));
+	return asInt (processData1 (inputArgs[0].asInt));
 }
 
 int processData1(int i)
@@ -23,14 +20,13 @@ int processData1(int i)
 }
 char processData2 (int i);
 void processData2_async (int i){
-
-	Value temp0 = asInt (i);
-	executeFunction (functions [1], &temp0);
+	Value argsIn[1] = {asInt (i)};
+	executeFunction (functions [1], argsIn);
 }
 
-Value processData2_HELPER_D82KT6KF9 (Value* i)
+Value processData2_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	return asChar (processData2 (i [0].asInt));
+	return asChar (processData2 (inputArgs[0].asInt));
 }
 
 char processData2(int i)
@@ -39,15 +35,13 @@ char processData2(int i)
 }
 void print (int index, char ch);
 void print_async (int index, char ch){
-
-	Value temp0 = asInt (index);
-	Value temp1 = asChar (ch);
-	executeFunction (functions [2], &temp0, &temp1);
+	Value argsIn[2] = {asInt (index),asChar (ch)};
+	executeFunction (functions [2], argsIn);
 }
 
-Value print_HELPER_D82KT6KF9 (Value* index, Value* ch)
+Value print_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	print (index [0].asInt ch [1].asChar);
+	print (inputArgs[0].asChar , inputArgs[1].asInt);
 }
 
 void print(int index, char ch)
@@ -55,16 +49,6 @@ void print(int index, char ch)
     printf("char at index %d is %c", index, ch);
 }
 int main ();
-void main_async (){
-
-	executeFunction (functions [3]);
-}
-
-Value main_HELPER_D82KT6KF9 ()
-{
-	return asInt (main ());
-}
-
 int main()
 {
 	makeWorkers ();
@@ -78,4 +62,4 @@ int main()
         processData2_async(i);
     }
 	finishAllWorkers ();
-}}
+}

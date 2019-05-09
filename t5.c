@@ -13,7 +13,7 @@ int main() {
 	Function* printFunction = makeFunction(1, print);
 	Value arg1 = asInt(212);
 	executeFunction(printFunction, &arg1);
-	localSync();
+	localWorkerSync();
 	printf("Desired output: Should print 212.\n");
 
 	return 0;

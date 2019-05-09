@@ -34,7 +34,7 @@ Value fib(Value* args){
 		executeFunction(subFibFunc, &n1Arg);
 		Value n_2Val = asInt(n-2);
 		int n_2 = fib(&n_2Val).asInt;
-		localSync();
+		localWorkerSync();
 		return asInt(n_1 + n_2);
 	}
 }
@@ -46,11 +46,11 @@ int main() {
 	Function* printFunction = makeFunction(1, print);
 
 	foreach_int(printFunction, data, 10);
-	localSync();
+	localWorkerSync();
 	printf("Desired output: Should iterate through numbers 1-10 in any order. \n");
 	waitFor(fibFunc, printFunction, 0);
 	foreach_int(fibFunc, data, 10);
-	localSync();
+	localWorkerSync();
 	printf("Desired output: Should iterate through numbers 1-10 in any order, with some but hopefully not many duplicates. \n");
 
 	return 0;

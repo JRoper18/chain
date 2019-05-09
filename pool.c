@@ -47,7 +47,6 @@ static void pooledThread(int index){
 				pthread_barrier_wait(&syncBarrier);
 			}
 			continue;
-
 		}
 		//printf("Running task on thread %d\n", index);
 		queueSize--;
@@ -93,14 +92,14 @@ void initPool(){
 		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, i);
 	}
 }
-void sync(){
+void localSafeSync(){
+
+}
+void finish(){
 	wait = 1;
 	//Now, we wait until we can pass the barrier.
 	pthread_barrier_wait(&syncBarrier);
 	//Now, if there's anything in the task queue, it needs to finish, so repeat until that's the case.
 	wait = 0;
-}
-void finish(){
-	sync();
 	end = 1;
 }
