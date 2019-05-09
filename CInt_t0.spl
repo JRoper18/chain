@@ -3,6 +3,7 @@ int bar ();
 
 unsigned int foo (long long a: [bar])
 {
+    {}
     //SAME CODE
     return a >> 2;
 }

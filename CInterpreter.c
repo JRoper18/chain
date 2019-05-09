@@ -738,6 +738,7 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                             }
                         }
                     }
+                    push (s, '{');
                     state = 6;
                 }
             }
@@ -752,11 +753,11 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                 {
                     startSlash = true;
                 }
-                else if (n != '{' && n != '}')
+                else if (n != '}')
                 {
                     fprintf(cFile, "%c", n);
                 }
-                else if (n == '{')
+                if (n == '{')
                 {
                     push (s, '{');
                 }
@@ -775,6 +776,11 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
 							}
                         }
                         state = 7;
+                        //fprintf(cFile, "BLAH");
+                    }
+                    else
+                    {
+                        fprintf (cFile, "}");
                     }
                 }
                 if (n == '/')
