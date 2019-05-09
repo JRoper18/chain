@@ -6,7 +6,8 @@ char data2[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
 int processData1 (int i);
 void processData1_async (int i)
 {
-	Value argsIn[1] = {asInt (i)};
+	Value* argsIn = calloc(1, sizeof(Value));
+	argsIn[0] = asInt(i);
 	executeFunction (functions [0], argsIn);
 }
 
@@ -22,7 +23,8 @@ int processData1(int i)
 char processData2 (int i);
 void processData2_async (int i)
 {
-	Value argsIn[1] = {asInt (i)};
+	Value* argsIn = calloc(1, sizeof(Value));
+	argsIn[0] = asInt(i);
 	executeFunction (functions [1], argsIn);
 }
 
@@ -49,7 +51,7 @@ Value print_HELPER_D82KT6KF9 (Value* inputArgs)
 
 void print(int index, char ch)
 {
-    printf("char at index %d is %c", index, ch);
+    printf("char at index %d is %c\n", index, ch);
 }
 int main ();
 void main_async ()
@@ -65,7 +67,7 @@ Value main_HELPER_D82KT6KF9 (Value* inputArgs)
 
 int main()
 {
-	makeWorkers ();
+	initPool ();
 	functions = calloc(100, sizeof(Function*));
 
 	functions [0] = makeFunction (1, processData1_HELPER_D82KT6KF9);
@@ -77,5 +79,5 @@ int main()
         processData1_async(i);
         processData2_async(i);
     }
-	finishAllWorkers ();
+	finish ();
 }

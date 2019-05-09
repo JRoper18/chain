@@ -9,7 +9,7 @@ char processData2(int i){
     return data2[i];
 }
 void print(int index : [processData1], char ch : [processData2]){
-    printf("char at index %d is %c", index, ch);
+    printf("char at index %d is %c\n", index, ch);
 }
 int main(){
     for(int i = 0; i<10; i++){

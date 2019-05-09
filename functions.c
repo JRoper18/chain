@@ -65,19 +65,19 @@ void notify(Notifier* notifier, Value val){
 }
 
 void executeFunction(Function* function, Value* argsIn){
-	Value* args;
+	Value* args = calloc(function->numArgs, sizeof(Value));
 	if(argsIn != NULL || function->numArgs == 0){
 		args = argsIn;
 	}
 	else {
-		args = calloc(function->numArgs, sizeof(Value));
 		//First, assemble the arguments from each arg queue.
 		for(int i = 0; i<function->numArgs; i++){
 			if(function->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
 				args[i] = asPointer(function->values[i]);
 			}
 			else{
-				args[i] = removeValueQ((function->values)[i]);
+				Value arg = removeValueQ((function->values)[i]);
+				args[i] = arg;
 			}
 		}
 	}
