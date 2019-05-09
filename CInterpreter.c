@@ -933,7 +933,7 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                         fprintf (cFile, ")\n{\n\t");
                         if (strcmp (inf->type, "void") != 0)
                         {
-                            cur = inf->parameters [i];
+                            //cur = inf->parameters [i];
                             fprintf (cFile, "return as%s (", toValue (inf->type, cur->isArray));
                         }
                         fprintf (cFile, "%s (", inf->name);
