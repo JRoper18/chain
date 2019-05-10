@@ -97,6 +97,8 @@ Function* cloneFunction(Function* old, bool cloneNofifiers){
 		newFunc->numArgs = size;
 		newFunc->exec = old->exec;
 		newFunc->notify = old->notify;
+		newFunc->set = calloc(size, sizeof(bool));
+		newFunc->values = calloc(size, sizeof(ValueQueue*));
 		for(int i = 0; i<size; i++){
 			newFunc->set[i] = old->set[i];
 			if(newFunc->set[i]){

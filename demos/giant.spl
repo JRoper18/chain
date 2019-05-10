@@ -1,0 +1,9 @@
+void fee(){
+    printf("fe, ");
+}
+void fi(bool hasFeeed : [fee]){
+    printf("fi");
+}
+int main(){
+    fee();
+}

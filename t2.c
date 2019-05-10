@@ -4,38 +4,36 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "atomic.h"
-void dumbIncrement(Atomic* atomic){
-    int atomicInt = getAtomic(atomic).asInt;
-    Value incremented = asInt(atomicInt + 1);
+int x = 0;
+Atomic* atomic;
+void dumbIncrement(){
+    int toAdd = x;
     sleep(1);
-    setAtomic(atomic, incremented);
+    x = toAdd + 1;
 }
-Value incrementVal(Value val){
-    return asInt(val.asInt+1);
-}
-void smartIncrement(Atomic* atomic){
-    deltaAtomic(atomic, incrementVal);
+void smartIncrement(){
+    incrementAtomic(atomic, 1);
 }
 int main() {
-    Atomic* atomic = makeAtomic(asInt(7));
+	atomic = makeAtomic(asInt(0));
     //Concurrently look and edit our atomic variable incorrectly, by looking at them and waiting a while to edit them.
     //In this test, only 1 edit goes through even though it's called 10 times.
     pthread_t threads[10];
     for(int i = 0; i<10; i++){
-        pthread_create(&threads[i], NULL, dumbIncrement, atomic);
+        pthread_create(&threads[i], NULL, dumbIncrement, NULL);
     }
     for(int i = 0; i<10; i++){
         pthread_join(threads[i], NULL);
     }
-    printf("Should be 8: %d\n", getAtomic(atomic).asInt);
-    //Now, concurrently increment it 10 times by using the delta functions.
+    printf("Should be 10: %d\n", x);
+	//Now, concurrently increment it 10 times by using the delta functions.
     for(int i = 0; i<10; i++){
-        pthread_create(&threads[i], NULL, smartIncrement, atomic);
+        pthread_create(&threads[i], NULL, smartIncrement, NULL);
     }
     for(int i = 0; i<10; i++){
         pthread_join(threads[i], NULL);
     }
-    printf("Should be 18: %d\n", getAtomic(atomic).asInt);
+    printf("Should be 10: %d\n", getAtomic(atomic).asInt);
 
 
 }

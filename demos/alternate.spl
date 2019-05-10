@@ -1,14 +1,14 @@
 
 int* final;
 
-void mod (int index: [add])
+void mod (unsigned int index: [add])
 {
-    final [index] = final [index] % 1000;
+    final [index % 1000] = final [index % 1000] % 1000;
 }
 
 int add (int* array, unsigned int i1, unsigned int i2)
 {
-    array [i1] = array [i1 % 1000] + array [i2 % 1000];
+    final [i1 % 1000] = final [i1 % 1000] + final [i2 % 1000];
 
     return i1;
 }

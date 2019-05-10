@@ -11,6 +11,7 @@
 #include "pool.h"
 #include "value.h"
 #include "functions.h"
+#include "worker.h"
 
 #define MAX_THREADS 30
 
@@ -21,11 +22,14 @@ volatile static bool wait = 0;
 static bool end = 0;
 volatile int numRun = 0;
 volatile int numAdded = 0;
-volatile static ValueQueue* taskQueue = 0;
-volatile static ValueQueue* argQueue = 0;
+volatile ValueQueue* taskQueue = 0;
+volatile ValueQueue* argQueue = 0;
+volatile ValueQueue* taskLevelQueue = 0;
 volatile static int queueSize = 0;
 static pthread_mutex_t taskQueueLock;
 static pthread_t availibleThreads[MAX_THREADS];
+static int threadLevels[MAX_THREADS];
+static int taskLevelsRemaining[MAX_LEVEL];
 static pthread_barrier_t syncBarrier;
 static size_t numThreads;
 void runOnPool(Function* func, Value* args){
@@ -68,8 +72,36 @@ static void pooledThread(int index){
 		Notifier* notifier = function->notify;
 		if(notifier != 0){
 			while(notifier != 0){
+				Value* args = calloc(notifier->listener->numArgs, sizeof(Value));
+				pthread_mutex_lock(&taskQueueLock);
 				//Tell the next function that we're done, here's our value, do whatever you want with it
-				notify(notifier, result);
+				if(notifier->index >= 0){ //A negative index signals that we don't pipe output at all.
+					addValueQ(notifier->listener->values[notifier->index], result);
+				}
+				//Check if the function can execute something.
+				bool canRun = true;
+				//First, assemble the arguments from each arg queue.
+				for(int i = 0; i<notifier->listener->numArgs; i++){
+					if(function->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
+						args[i] = asPointer(notifier->listener->values[i]);
+					}
+					else{
+
+						if(isEmptyQ(notifier->listener->values[i])){
+							//Don't have all the arguments
+							canRun = false;
+							free(args);
+							break;
+						}
+						Value arg = removeValueQ(notifier->listener->values[i]);
+						args[i] = arg;
+					}
+				}
+				pthread_mutex_unlock(&taskQueueLock);
+				if(canRun){
+					//Add the task to the queue.
+					runOnPool(notifier->listener, args);
+				}
 				notifier = notifier->next;
 			}
 		}
@@ -93,8 +125,22 @@ void initPool(){
 		pthread_create(&availibleThreads[i], NULL, (void*) pooledThread, i);
 	}
 }
-void localSafeSync(){
 
+void localSafeSync(){
+	wait = 1;
+	//Now, we wait until we can pass the barrier.
+	pthread_barrier_wait(&syncBarrier);
+	//Now, if there's anything in the task queue, it needs to finish, so repeat until that's the case.
+	wait = 0;
+	/*
+	while(true){
+		bool remaining;
+		for(int i = 0; i<numThreads; i++){
+		}
+		if(!remaining){
+			break;
+		}
+	}*/
 }
 void finish(){
 	wait = 1;

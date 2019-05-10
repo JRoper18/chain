@@ -959,24 +959,28 @@ functionInfo** interpret (char* fileName, char* to, bool safeMode)
                                 fprintf (cFile, " []");
                             }
 						}
-                        fprintf (cFile, ")\n{\n");
-                        if(inf->numParams > 0){ //Make the parameter array.
-							fprintf(cFile, "\tValue argsIn[%d] = {", inf->numParams);
+                        if(inf->numParams == 0){
+							fprintf (cFile, "void** store)\n{\n");
+						}
+                        else {
+							fprintf (cFile, " , void** store)\n{\n");
+						}
+						fprintf(cFile, "\tFunction* func = functions[%d];\n", infoNum);
+						fprintf(cFile, "\tif(store != NULL){\n\t\tfunc=cloneFunction(func, 1);\n\t");
+						fprintf(cFile, "\tFunction* storeFunc=makeStoreFunction(store);\n\t");
+						fprintf(cFile, "\twaitFor(func, storeFunc, 0);\n\t}\n");
+						if(inf->numParams > 0){ //Make the parameter array.
+
+							fprintf(cFile, "\tValue* argsIn = calloc(%d, sizeof(Value));", inf->numParams);
 							for(i = 0; i<inf->numParams; i++){
 								cur = inf->parameters [i];
-								if(i == inf->numParams - 1){
-									//Last one. Don't add a comma to the end, finish the array instead.
-									fprintf(cFile, "as%s (%s)};", toValue (cur->type, cur->isArray), cur->name);
-								}
-								else {
-									fprintf(cFile, "as%s (%s),", toValue (cur->type, cur->isArray), cur->name);
-								}
+								fprintf(cFile, "\n\targsIn[%d] = as%s (%s);", i, toValue (cur->type, cur->isArray), cur->name);
 							}
-							fprintf (cFile, "\n\texecuteFunction (functions [%d], argsIn", infoNum); //Put it in.
+							fprintf (cFile, "\n\texecuteFunction (func, argsIn"); //Put it in.
 						}
                         else {
                         	//Just give it NULL as the arguments.
-							fprintf (cFile, "\n\texecuteFunction (functions [%d], NULL", infoNum); //Put it in.
+							fprintf (cFile, "\n\texecuteFunction (func, NULL"); //Put it in.
 
 						}
                         /* executeFunciton only takes 1 argument, the array OF arguments.
