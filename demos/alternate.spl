@@ -1,0 +1,32 @@
+void mod (int* array, int index, int modulo)
+{
+    array [index] = array [index] % modulo;
+}
+
+void add (int* array, int i1, int i2)
+{
+    array [i1] = array [i1] + array [i2];
+    mod (array, i1, 1000);
+}
+
+int* final;
+int done;
+
+int main (int argc, char** argv)
+{
+    int* array = (int*)malloc (100 * sizeof (int));
+    printf ("GENERATING RANDOM NUMBERS!\n");
+    for (int i = 0; i < 1000; i++)
+    {
+        array [i] = 1000 - i - 1;
+    }
+    for (int i = 0; i < 100000; i++)
+    {
+        add_async (array, i, array [i]);
+    }
+
+    for (int i = 0; i < 1000; i++)
+    {
+        printf ("%d\n", array [i]);
+    }
+}

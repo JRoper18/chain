@@ -1,83 +1,74 @@
 #include "lib.h" 
 Function** functions;
 
-int data1[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-char data2[10] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
-int processData1 (int i);
-void processData1_async (int i)
+void mod (int* array, int index, int modulo);
+void mod_async (int* array, int index, int modulo)
 {
-	Value* argsIn = calloc(1, sizeof(Value));
-	argsIn[0] = asInt(i);
+	Value argsIn[3] = {asPointer (array),asInt (index),asInt (modulo)};
 	executeFunction (functions [0], argsIn);
 }
 
-Value processData1_HELPER_D82KT6KF9 (Value* inputArgs)
+Value mod_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	return asInt (processData1 (inputArgs[0].asInt));
+	mod (inputArgs[0].asInt , inputArgs[1].asPointer , inputArgs[2].asInt);
 }
 
-int processData1(int i)
+void mod(int* array, int index, int modulo)
 {
-    return data1[i];
+    array [index] = array [index] % modulo;
 }
-char processData2 (int i);
-void processData2_async (int i)
+void add (int* array, int i1, int i2);
+void add_async (int* array, int i1, int i2)
 {
-	Value* argsIn = calloc(1, sizeof(Value));
-	argsIn[0] = asInt(i);
+	Value argsIn[3] = {asPointer (array),asInt (i1),asInt (i2)};
 	executeFunction (functions [1], argsIn);
 }
 
-Value processData2_HELPER_D82KT6KF9 (Value* inputArgs)
+Value add_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	return asChar (processData2 (inputArgs[0].asInt));
+	add (inputArgs[0].asInt , inputArgs[1].asPointer , inputArgs[2].asInt);
 }
 
-char processData2(int i)
+void add(int* array, int i1, int i2)
 {
-    return data2[i];
+    array [i1] = array [i1] + array [i2];
+    mod (array, i1, 1000);
 }
-void print (int index, char ch);
-void print_async (int index, char ch)
+int* final;
+int done;
+int main (int argc, char** argv);
+void main_async (int argc, char** argv)
 {
-	Value argsIn[2] = {asInt (index),asChar (ch)};
+	Value argsIn[2] = {asInt (argc),asPointer (argv)};
 	executeFunction (functions [2], argsIn);
-}
-
-Value print_HELPER_D82KT6KF9 (Value* inputArgs)
-{
-	print (inputArgs[0].asChar , inputArgs[1].asInt);
-}
-
-void print(int index, char ch)
-{
-    printf("char at index %d is %c\n", index, ch);
-}
-int main ();
-void main_async ()
-{
-
-	executeFunction (functions [3], NULL);
 }
 
 Value main_HELPER_D82KT6KF9 (Value* inputArgs)
 {
-	return asInt (main ());
+	return asInt (main (inputArgs[0].asPointer , inputArgs[1].asInt));
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	initPool ();
 	functions = calloc(100, sizeof(Function*));
 
-	functions [0] = makeFunction (1, processData1_HELPER_D82KT6KF9);
-	functions [1] = makeFunction (1, processData2_HELPER_D82KT6KF9);
-	functions [2] = makeFunction (2, print_HELPER_D82KT6KF9);
-	waitFor (functions [0], functions [2], 0);
-	waitFor (functions [1], functions [2], 1);
-    for(int i = 0; i<10; i++){
-        processData1_async(i);
-        processData2_async(i);
+	functions [0] = makeFunction (3, mod_HELPER_D82KT6KF9);
+	functions [1] = makeFunction (3, add_HELPER_D82KT6KF9);
+    int* array = (int*)malloc (100 * sizeof (int));
+    printf ("GENERATING RANDOM NUMBERS!\n");
+    for (int i = 0; i < 1000; i++)
+    {
+        array [i] = 1000 - i - 1;
+    }
+    for (int i = 0; i < 100000; i++)
+    {
+        add_async (array, i, array [i]);
+    }
+
+    for (int i = 0; i < 1000; i++)
+    {
+        printf ("%d\n", array [i]);
     }
 	finish ();
 }
