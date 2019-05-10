@@ -82,11 +82,10 @@ static void pooledThread(int index){
 				bool canRun = true;
 				//First, assemble the arguments from each arg queue.
 				for(int i = 0; i<notifier->listener->numArgs; i++){
-					if(function->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
+					if(notifier->listener->set[i]){ //If the set bit is true, it's not a pointer to a value queue, it's the permanent value in that arg.
 						args[i] = asPointer(notifier->listener->values[i]);
 					}
 					else{
-
 						if(isEmptyQ(notifier->listener->values[i])){
 							//Don't have all the arguments
 							canRun = false;
