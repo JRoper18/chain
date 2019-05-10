@@ -9,7 +9,7 @@ void addValueQ(ValueQueue* q, Value v) {
 	ValueQueueMem* r = calloc(1, sizeof(ValueQueueMem));
 	r->val = v;
 	r->next = 0;
-	if (q->tail != 0) {
+	if (q->tail != NULL) {
 		q->tail->next = r;
 	}
 	q->tail = r;

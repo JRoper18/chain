@@ -48,7 +48,6 @@ static void pooledThread(int index){
 			}
 			continue;
 		}
-		//printf("Running task on thread %d\n", index);
 		queueSize--;
 		numRun++;
 		Value funcValue = removeValueQ(taskQueue);
@@ -67,10 +66,12 @@ static void pooledThread(int index){
 		}
 		//Now, it needs to notify all the things that are dependent on it.
 		Notifier* notifier = function->notify;
-		while(notifier != 0){
-			//Tell the next function that we're done, here's our value, do whatever you want with it
-			notify(notifier, result);
-			notifier = notifier->next;
+		if(notifier != 0){
+			while(notifier != 0){
+				//Tell the next function that we're done, here's our value, do whatever you want with it
+				notify(notifier, result);
+				notifier = notifier->next;
+			}
 		}
 	}
 	pthread_exit(NULL);
